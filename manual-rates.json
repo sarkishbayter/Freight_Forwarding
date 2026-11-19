@@ -1,7 +1,0 @@
-{
-  "_help": "Currencies the ECB does not publish. per_usd = how many units of the currency equal 1 USD. Edit and commit when the official rate changes.",
-  "LBP": {
-    "per_usd": 89500,
-    "source": "Banque du Liban official rate"
-  }
-}
