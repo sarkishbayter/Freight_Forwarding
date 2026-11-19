@@ -1,0 +1,17 @@
+{
+  "base": "EUR",
+  "date": "",
+  "source": "SAMPLE DATA - replaced by the daily update",
+  "sample": true,
+  "rates": {
+    "USD": 1.16,
+    "GBP": 0.88,
+    "JPY": 180.0,
+    "CHF": 0.93,
+    "CAD": 1.62,
+    "AUD": 1.79,
+    "TRY": 49.0,
+    "LBP": 103820
+  },
+  "notes": {}
+}

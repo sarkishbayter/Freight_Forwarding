@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Calculators</title>
+  <meta name="description" content="Personal collection of everyday calculators, starting with a currency converter.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <h1>My Calculators</h1>
+      <nav aria-label="Calculators">
+        <a href="#currency" class="active">Currency</a>
+        <!-- Add new calculators here, e.g. <a href="#loan">Loan</a> -->
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="currency" class="card" aria-labelledby="currency-title">
+      <h2 id="currency-title">Currency converter</h2>
+
+      <div id="banner" class="banner" hidden></div>
+
+      <form id="converter" autocomplete="off" novalidate>
+        <div class="field">
+          <label for="amount">Amount</label>
+          <input id="amount" type="text" inputmode="decimal" value="1" placeholder="0">
+        </div>
+
+        <div class="pair">
+          <div class="field">
+            <label for="from">From</label>
+            <select id="from"></select>
+          </div>
+
+          <button type="button" id="swap" class="swap" aria-label="Swap currencies" title="Swap">⇄</button>
+
+          <div class="field">
+            <label for="to">To</label>
+            <select id="to"></select>
+          </div>
+        </div>
+      </form>
+
+      <div class="result" aria-live="polite">
+        <div id="result-line" class="result-main">—</div>
+        <div id="rate-line" class="result-sub"></div>
+      </div>
+
+      <p id="source-line" class="meta"></p>
+    </section>
+
+    <!-- Next calculators go in more <section class="card"> blocks below -->
+  </main>
+
+  <footer class="wrap site-footer">
+    <p>Rates are indicative reference rates, not a trading quote.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
