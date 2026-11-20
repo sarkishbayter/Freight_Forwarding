@@ -1,6 +1,13 @@
 (function () {
   "use strict";
 
+  if (window.FF) {
+    FF.register({
+      id: "currency", group: "Converters", title: "Currency converter",
+      desc: "Daily European Central Bank reference rates, plus the Lebanese pound at the rate you set."
+    });
+  }
+
   var amountEl = document.getElementById("amount");
   var fromEl = document.getElementById("from");
   var toEl = document.getElementById("to");

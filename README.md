@@ -1,23 +1,43 @@
-# My Calculators
+# Freight toolbox
 
-A small static website for the calculations I use often. First section: a currency converter.
+A static website of freight forwarding calculators, converters and quick references. No server and no build step.
 
-## How the rates stay current
+## Tools
 
-- `scripts/update_rates.py` downloads the official **European Central Bank** daily reference rates.
-- `.github/workflows/update-rates.yml` runs it every weekday at 17:30 UTC and commits `data/rates.json` if it changed.
-- The page reads `data/rates.json`. No server, no API key.
-- The ECB publishes about 30 currencies and **not** the Lebanese pound. LBP comes from `data/manual-rates.json`
-  (units per 1 USD). Edit that number when the Banque du Liban rate changes.
+- **Cargo:** chargeable weight, CBM and volume, container capacity, pallet calculator, freight cost
+- **Time and dates:** world clock, time zone converter, date calculator, ETA calculator, transit time, free time (demurrage and detention)
+- **Converters:** weight, length, temperature, CBM and CFT, currency
+- **Reference:** dangerous goods, airport / port / country codes, Incoterms 2020, freight glossary
 
-## Publish on GitHub
+## Files
 
-1. Create a new repository on GitHub (for example `calculators`).
-2. Upload everything in this folder (or `git init`, `git add .`, `git commit`, `git push`).
-3. Repo **Settings → Pages → Build and deployment**: Source = *Deploy from a branch*, Branch = `main`, folder = `/ (root)`.
-4. Repo **Actions** tab → *Update exchange rates* → **Run workflow** once, so live rates replace the sample data.
-5. Your site is at `https://<your-username>.github.io/<repo-name>/`.
+| File | Purpose |
+| --- | --- |
+| `index.html` | Page shell and home page |
+| `style.css` | All styling |
+| `core.js` | Helpers, navigation and routing |
+| `cargo.js`, `time.js`, `convert.js`, `reference.js` | The tools |
+| `app.js` | Currency converter |
+| `data/rates.json` | Exchange rates, rewritten daily by the workflow |
+| `data/manual-rates.json` | Currencies the ECB does not publish (LBP) |
+| `scripts/update_rates.py` | Downloads the ECB rates |
+| `.github/workflows/update-rates.yml` | Runs the update every weekday |
 
-## Adding another calculator
+## Exchange rates
 
-Add a link in the `<nav>` and a new `<section class="card">` in `index.html`, then put its code in a new JS file.
+The workflow downloads the official European Central Bank rates every weekday at 17:30 UTC and commits `data/rates.json`.
+The Lebanese pound is not an ECB currency, so edit `data/manual-rates.json` (units per 1 USD) when the official rate changes.
+
+## Publish on GitHub Pages
+
+Settings, Pages, Deploy from a branch, `main`, `/ (root)`.
+
+## Adding a tool
+
+Create a file with `FF.register({ id, group, title, desc, render })`, add a `<script>` tag for it in `index.html` before `FF.start()`.
+It appears in the menu and on the home page automatically.
+
+## Data to review now and then
+
+Container sizes and payloads (`cargo.js`), the UN number list and lithium battery rules (`reference.js`) and the code lists are quick references.
+Check them against current carrier, IATA, IMDG and ADR publications before relying on them.

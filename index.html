@@ -3,70 +3,86 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1769c9">
-  <title>My Calculators</title>
-  <meta name="description" content="Personal collection of everyday calculators, starting with a currency converter.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%231769c9'/%3E%3Ctext x='32' y='44' font-size='36' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='700'%3E%3D%3C/text%3E%3C/svg%3E">
+  <meta name="theme-color" content="#1b6fd1">
+  <title>Freight toolbox</title>
+  <meta name="description" content="Calculators, converters and quick references for freight forwarding.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231b6fd1'/%3E%3Cpath d='M14 22h36M14 32h36M14 42h36' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="wrap">
-      <h1 class="brand"><span class="logo" aria-hidden="true">=</span> My Calculators</h1>
-      <nav aria-label="Calculators">
-        <a href="#currency" class="active">Currency</a>
-        <!-- Add new calculators here, e.g. <a href="#loan">Loan</a> -->
-      </nav>
-    </div>
+  <a class="skip" href="#view">Skip to content</a>
+
+  <header class="topbar">
+    <a class="brand" href="#/home"><span class="mark" aria-hidden="true"></span>Freight toolbox</a>
+    <button type="button" id="menu-btn" class="menu-btn" aria-expanded="false" aria-controls="sidebar">Menu</button>
   </header>
 
-  <div class="wrap intro">
-    <h2>Quick conversions</h2>
-    <p>Daily reference rates from the European Central Bank.</p>
+  <div class="shell">
+    <aside id="sidebar" class="sidebar" aria-label="Tools">
+      <a class="brand brand-side" href="#/home"><span class="mark" aria-hidden="true"></span>Freight toolbox</a>
+      <nav id="nav"></nav>
+    </aside>
+    <div id="scrim" class="scrim" hidden></div>
+
+    <main id="view" class="view" tabindex="-1">
+
+      <!-- Home -->
+      <section id="tool-home" class="tool" hidden>
+        <div class="hero">
+          <div class="hero-rod hero-rod-a" aria-hidden="true"></div>
+          <div class="hero-rod hero-rod-b" aria-hidden="true"></div>
+          <h1>Freight toolbox</h1>
+          <p>Weights, volumes, containers, dates and references for everyday forwarding work.</p>
+        </div>
+        <div id="hero-clocks" class="hero-clocks" aria-label="Current time in key cities"></div>
+        <div id="directory" class="directory"></div>
+      </section>
+
+      <!-- Currency converter (rates come from data/rates.json) -->
+      <section id="tool-currency" class="tool" hidden>
+        <div id="banner" class="banner" hidden></div>
+        <div class="split">
+          <form id="converter" class="inputs" autocomplete="off" novalidate>
+            <label class="field">
+              <span class="cap">Amount</span>
+              <input id="amount" class="big-input" type="text" inputmode="decimal" value="1" placeholder="0">
+            </label>
+            <div class="pair">
+              <label class="field">
+                <span class="cap">From</span>
+                <select id="from"></select>
+              </label>
+              <button type="button" id="swap" class="swap" aria-label="Swap currencies" title="Swap">&#8644;</button>
+              <label class="field">
+                <span class="cap">To</span>
+                <select id="to"></select>
+              </label>
+            </div>
+          </form>
+          <aside class="result" aria-live="polite">
+            <div id="result-line" class="result-main">&mdash;</div>
+            <div id="rate-line" class="result-sub"></div>
+            <p id="source-line" class="meta"></p>
+          </aside>
+        </div>
+      </section>
+
+    </main>
   </div>
 
-  <main class="wrap">
-    <section id="currency" class="card" aria-labelledby="currency-title">
-      <h3 id="currency-title">Currency converter</h3>
-
-      <div id="banner" class="banner" hidden></div>
-
-      <form id="converter" autocomplete="off" novalidate>
-        <div class="field">
-          <label for="amount">Amount</label>
-          <input id="amount" type="text" inputmode="decimal" value="1" placeholder="0">
-        </div>
-
-        <div class="pair">
-          <div class="field">
-            <label for="from">From</label>
-            <select id="from"></select>
-          </div>
-
-          <button type="button" id="swap" class="swap" aria-label="Swap currencies" title="Swap">⇄</button>
-
-          <div class="field">
-            <label for="to">To</label>
-            <select id="to"></select>
-          </div>
-        </div>
-      </form>
-
-      <div class="result" aria-live="polite">
-        <div id="result-line" class="result-main">—</div>
-        <div id="rate-line" class="result-sub"></div>
-      </div>
-
-      <p id="source-line" class="meta"></p>
-    </section>
-
-    <!-- Next calculators go in more <section class="card"> blocks below -->
-  </main>
-
-  <footer class="wrap site-footer">
-    <p>Rates are indicative reference rates, not a trading quote.</p>
+  <footer class="site-footer">
+    <p>Reference tools for planning. Always confirm rates, regulations and free time with the carrier or authority.</p>
   </footer>
 
+  <script src="core.js"></script>
+  <script src="cargo.js"></script>
+  <script src="time.js"></script>
+  <script src="convert.js"></script>
   <script src="app.js"></script>
+  <script src="reference.js"></script>
+  <script>FF.start();</script>
 </body>
 </html>
