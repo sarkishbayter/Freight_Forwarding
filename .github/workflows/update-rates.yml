@@ -2,8 +2,9 @@ name: Update exchange rates
 
 on:
   schedule:
+    # ECB publishes around 16:00 CET on working days; 17:30 UTC is safely after that.
     - cron: "30 17 * * 1-5"
-  workflow_dispatch:
+  workflow_dispatch: # lets you run it by hand from the Actions tab
 
 permissions:
   contents: write
