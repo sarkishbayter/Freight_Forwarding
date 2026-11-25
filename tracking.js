@@ -7,13 +7,13 @@
   /* ---------- sea carriers ---------- */
   /* deep: the link opens the tracking page itself. {n} is replaced with the number when the carrier supports it. */
   var SEA = [
-    { id: "maersk", name: "Maersk", url: "https://www.maersk.com/tracking/{n}", deep: true, pre: ["MAEU", "MRKU", "MSKU", "MRSU", "MNBU", "PONU"] },
-    { id: "msc", name: "MSC", url: "https://www.msc.com/en/track-a-shipment", deep: true, pre: ["MSCU", "MEDU"] },
-    { id: "cma", name: "CMA CGM", url: "https://www.cma-cgm.com/ebusiness/tracking", deep: true, pre: ["CMAU", "CGMU", "APLU"] },
+    { id: "maersk", name: "Maersk", url: "https://www.maersk.com/tracking/{n}", deep: true, fill: "yes", pre: ["MAEU", "MRKU", "MSKU", "MRSU", "MNBU", "PONU"] },
+    { id: "msc", name: "MSC", url: "https://www.msc.com/en/track-a-shipment?trackingNumber={n}&trackingMode=0", deep: true, fill: "try", pre: ["MSCU", "MEDU"] },
+    { id: "cma", name: "CMA CGM", url: "https://www.cma-cgm.com/ebusiness/tracking/search?SearchBy={t}&Reference={n}", deep: true, fill: "try", pre: ["CMAU", "CGMU", "APLU"] },
     { id: "hapag", name: "Hapag-Lloyd", url: "https://www.hapag-lloyd.com/en/online-business/track/track.html", deep: true, pre: ["HLXU", "HLCU", "HLBU"] },
     { id: "cosco", name: "COSCO", url: "https://elines.coscoshipping.com/ebusiness/cargoTracking", deep: true, pre: ["COSU", "CCLU", "CBHU", "CSNU"] },
-    { id: "one", name: "ONE (Ocean Network Express)", url: "https://ecomm.one-line.com/one-ecom/manage-shipment/cargo-tracking", deep: true, pre: ["ONEU"] },
-    { id: "zim", name: "ZIM", url: "https://www.zim.com/tools/track-a-shipment", deep: true, pre: ["ZIMU"] },
+    { id: "one", name: "ONE (Ocean Network Express)", url: "https://ecomm.one-line.com/one-ecom/manage-shipment/cargo-tracking?trkNoParam={n}", deep: true, fill: "try", pre: ["ONEU"] },
+    { id: "zim", name: "ZIM", url: "https://www.zim.com/tools/track-a-shipment?consnumber={n}", deep: true, fill: "try", pre: ["ZIMU"] },
     { id: "evergreen", name: "Evergreen", url: "https://www.evergreen-line.com/", deep: false, pre: ["EGHU", "EGSU", "EISU", "EMCU"] },
     { id: "yangming", name: "Yang Ming", url: "https://www.yangming.com/", deep: false, pre: ["YMLU", "YMMU"] },
     { id: "hmm", name: "HMM", url: "https://www.hmm21.com/", deep: false, pre: ["HDMU"] },
@@ -33,14 +33,14 @@
     { id: "229", pre: ["229"], name: "Kuwait Airways Cargo", url: "https://www.kuwaitairways.com/" },
     { id: "910", pre: ["910"], name: "Oman Air Cargo", url: "https://www.omanair.com/" },
     { id: "077", pre: ["077"], name: "EgyptAir Cargo", url: "https://www.egyptair.com/" },
-    { id: "235", pre: ["235"], name: "Turkish Cargo", url: "https://www.turkishcargo.com.tr/en/online-services/shipment-tracking", deep: true },
-    { id: "020", pre: ["020"], name: "Lufthansa Cargo", url: "https://www.lufthansa-cargo.com/en/eservices/etracking", deep: true },
+    { id: "235", pre: ["235"], name: "Turkish Cargo", url: "https://www.turkishcargo.com/en/online-services/shipment-tracking", deep: true },
+    { id: "020", pre: ["020"], name: "Lufthansa Cargo", url: "https://www.lufthansa-cargo.com/en/eservices/tracking", deep: true },
     { id: "afklm", pre: ["057", "074"], name: "Air France KLM Martinair Cargo", url: "https://www.afklcargo.com/" },
     { id: "iag", pre: ["125", "075"], name: "IAG Cargo (British Airways, Iberia)", url: "https://www.iagcargo.com/" },
     { id: "172", pre: ["172"], name: "Cargolux", url: "https://www.cargolux.com/" },
     { id: "001", pre: ["001"], name: "American Airlines Cargo", url: "https://www.aacargo.com/" },
     { id: "006", pre: ["006"], name: "Delta Cargo", url: "https://www.deltacargo.com/" },
-    { id: "016", pre: ["016"], name: "United Cargo", url: "https://www.unitedcargo.com/en/us/track/awb/{p}-{s}", deep: true },
+    { id: "016", pre: ["016"], name: "United Cargo", url: "https://www.unitedcargo.com/en/us/track/awb/{p}-{s}", deep: true, fill: "yes" },
     { id: "180", pre: ["180"], name: "Korean Air Cargo", url: "https://cargo.koreanair.com/" },
     { id: "160", pre: ["160"], name: "Cathay Cargo", url: "https://www.cathaycargo.com/" },
     { id: "618", pre: ["618"], name: "Singapore Airlines Cargo", url: "https://www.siacargo.com/" },
@@ -111,14 +111,14 @@
     if (/^[A-Z]{4}\d{7}$/.test(n)) {
       var ok = containerCheckOk(n), c = findByPrefix(SEA, pre);
       return {
-        n: n, carrierId: c ? c.id : null, valid: ok,
+        n: n, type: "container", carrierId: c ? c.id : null, valid: ok,
         facts: [["Looks like", "Container number"], ["Check digit", ok ? "Valid" : "Does not match, re-check the number"], ["Owner code", pre + (c ? " (" + c.name + ")" : " (carrier not in the list)")]],
         warn: ok ? "" : "The last digit does not match the rest of the number, so there may be a typing mistake."
       };
     }
     var c2 = /^[A-Z]{4}/.test(n) ? findByPrefix(SEA, pre) : null;
     return {
-      n: n, carrierId: c2 ? c2.id : null,
+      n: n, type: "bl", carrierId: c2 ? c2.id : null,
       facts: [["Looks like", "Booking or bill of lading number"], ["Carrier", c2 ? c2.name + " (from the " + pre + " prefix)" : "Choose the carrier that issued it"]],
       warn: n.length < 6 ? "That looks short for a booking or bill of lading number." : ""
     };
@@ -141,7 +141,7 @@
   function link(carrier, d) {
     var url = carrier.url;
     var n = d.n || "";
-    return url.replace("{n}", encodeURIComponent(n)).replace("{p}", d.prefix || "").replace("{s}", d.serial || "");
+    return url.replace("{n}", encodeURIComponent(n)).replace("{p}", d.prefix || "").replace("{s}", d.serial || "").replace("{t}", d.type === "container" ? "Container" : "BL");
   }
 
   /* ---------- the tool page, shared by sea and air ---------- */
@@ -174,7 +174,11 @@
         go.addEventListener("click", function () { FF.copy(d.n); });
         var copy = h("button", { type: "button", class: "btn ghost", text: "Copy number", onclick: function () { FF.copy(d.n, copy); } });
         out.appendChild(h("div", { class: "btn-row" }, go, copy));
-        out.appendChild(h("p", { class: "meta", text: (c.deep ? "Opens the tracking page" : "Opens the carrier website, so use its Track menu") + ". The number is copied when you click, so you can paste it in the tracking box. The status itself comes from the carrier." }));
+        var how = c.fill === "yes" ? "Opens the tracking page with your number already filled in."
+          : c.fill === "try" ? "Opens the tracking page and tries to fill in your number. If the box is empty, paste it: the number is copied when you click."
+          : c.deep ? "Opens the tracking page. Paste the number into the box: it is copied when you click."
+          : "Opens the carrier website. Use its Track menu and paste the number: it is copied when you click.";
+        out.appendChild(h("p", { class: "meta", text: how + " The status itself comes from the carrier." }));
         var save = h("button", { type: "button", class: "btn", text: "Save to my shipments", onclick: function () { saveCurrent(); } });
         out.appendChild(h("div", { style: "border-top:1px solid var(--tide);padding-top:14px;display:flex;flex-direction:column;gap:12px" },
           FF.field("Your note (optional)", label), FF.field("Expected arrival (optional)", eta), h("div", { class: "btn-row" }, save)));
