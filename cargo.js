@@ -181,52 +181,109 @@
     return best;
   }
 
+  /* Pallets on a container floor: fill the width with up to two strips, each strip turned its own way. */
+  function stripCount(L, W, a, b) {
+    var best = 0, o = [[a, b], [b, a]];
+    o.forEach(function (o1) {
+      o.forEach(function (o2) {
+        var maxK = Math.floor(W / o1[1] + 1e-9);
+        for (var k = 0; k <= maxK; k++) {
+          var n1 = k * Math.floor(L / o1[0] + 1e-9);
+          var n2 = Math.floor((W - k * o1[1]) / o2[1] + 1e-9) * Math.floor(L / o2[0] + 1e-9);
+          if (n1 + n2 > best) best = n1 + n2;
+        }
+      });
+    });
+    return best;
+  }
+  function floorSpots(L, W, a, b) { return Math.max(stripCount(L, W, a, b), stripCount(W, L, a, b)); }
+
   FF.register({
     id: "container-capacity", group: "Cargo", title: "Container capacity",
-    desc: "How many cartons fit in a 20 ft, 40 ft, 40 ft high cube or 45 ft container, by volume and by weight.",
+    desc: "How many cartons or pallets fit in a 20 ft, 40 ft, 40 ft high cube or 45 ft container, by space and by weight.",
     render: function (root) {
+      var mode = "cartons";
       var L = FF.numBox(""), W = FF.numBox(""), H = FF.numBox(""), wt = FF.numBox(""), qty = FF.numBox("");
       var up = FF.checkbox("Keep cartons this way up", true);
+
+      var preset = FF.select(Object.keys(PALLETS).map(function (k) { return { v: k, t: PALLETS[k].t }; }), "eur");
+      var pL = FF.numBox(120), pW = FF.numBox(80), pH = FF.numBox(""), pKg = FF.numBox(""), pQty = FF.numBox(""), pStack = FF.numBox(2);
+      var stackable = FF.checkbox("Pallets can be stacked", false);
       var out = h("div");
+
+      var cartonBox = h("div", { style: "display:flex;flex-direction:column;gap:16px" },
+        h("div", { class: "row" }, FF.field("Carton length (cm)", L), FF.field("Width (cm)", W), FF.field("Height (cm)", H)),
+        h("div", { class: "row" }, FF.field("Weight per carton (kg)", wt, "Optional. Adds the weight limit."), FF.field("Total cartons to ship", qty, "Optional. Shows containers needed.")),
+        up.el);
+      var palletBox = h("div", { style: "display:none;flex-direction:column;gap:16px" },
+        FF.field("Pallet type", preset),
+        h("div", { class: "row" }, FF.field("Pallet length (cm)", pL, "Include any cargo overhang."), FF.field("Pallet width (cm)", pW)),
+        h("div", { class: "row" }, FF.field("Loaded height (cm)", pH, "Cargo plus the pallet itself."), FF.field("Gross weight per pallet (kg)", pKg, "Cargo plus pallet. Optional, adds the weight limit.")),
+        stackable.el,
+        h("div", { class: "row" }, FF.field("Pallets high when stacked", pStack, "Used only if stacking is allowed."), FF.field("Total pallets to ship", pQty, "Optional. Shows containers needed.")));
+
+      preset.addEventListener("change", function () { var p = PALLETS[preset.value]; pL.value = p.L; pW.value = p.W; update(); });
+
+      function render(rows, unit, headCols) {
+        var best = rows.reduce(function (m, r) { return r.load > m.load ? r : m; }, rows[0]);
+        var n = mode === "cartons" ? val(qty) : val(pQty);
+        out.appendChild(h("div", { class: "headline" },
+          h("span", { class: "cap", text: "Most " + unit + " in one container (" + best.ct.name + ")" }),
+          h("div", { class: "big" }, fmt(best.load, 0), h("small", { text: unit }))));
+        out.appendChild(FF.table(headCols, rows.map(function (r) { return r.cells; })));
+        if (n > 0) {
+          out.appendChild(h("div", { class: "stats" }, rows.map(function (r) {
+            var c = r.load > 0 ? Math.ceil(n / r.load) : 0;
+            return FF.stat(fmt(n, 0) + " " + unit + " in " + r.ct.id, c > 0 ? fmt(c, 0) + (c === 1 ? " container" : " containers") : "Does not fit");
+          })));
+        }
+      }
 
       function update() {
         FF.clear(out);
-        var a = val(L), b = val(W), c = val(H), kg = val(wt), n = val(qty);
-        if (!(a > 0 && b > 0 && c > 0)) { out.appendChild(h("p", { class: "empty", text: "Enter the carton size to see how many fit in each container." })); return; }
-        var dims = [a / 100, b / 100, c / 100];
-        var rows = CONTAINERS.map(function (ct) {
-          var f = bestFit(ct, dims, up.box.checked);
-          var byVol = f.n;
-          var byWt = kg > 0 ? Math.floor(ct.payload / kg) : Infinity;
-          var load = Math.min(byVol, byWt);
-          var limit = kg > 0 && byWt < byVol ? "Weight" : "Volume";
-          var used = load * dims[0] * dims[1] * dims[2];
-          return { ct: ct, byVol: byVol, byWt: byWt, load: load, limit: limit, util: used / (ct.l * ct.w * ct.h) * 100 };
-        });
-        var best = rows.reduce(function (m, r) { return r.load > m.load ? r : m; }, rows[0]);
-        out.appendChild(h("div", { class: "headline" },
-          h("span", { class: "cap", text: "Most cartons in one container (" + best.ct.name + ")" }),
-          h("div", { class: "big" }, fmt(best.load, 0), h("small", { text: "cartons" }))));
-        out.appendChild(FF.table(
-          ["Container", "By volume", "By weight", "Loadable", "Limited by", "Space used"],
-          rows.map(function (r) {
-            return [h("strong", { text: r.ct.id }), fmt(r.byVol, 0), r.byWt === Infinity ? h("span", { class: "dash", text: "not set" }) : fmt(r.byWt, 0),
-              h("strong", { text: fmt(r.load, 0) }), r.limit, fmt(r.util, 0) + "%"];
-          })));
-        if (n > 0) {
-          out.appendChild(h("div", { class: "stats" }, rows.map(function (r) {
-            return FF.stat(n + " cartons in " + r.ct.id, r.load > 0 ? fmt(Math.ceil(n / r.load), 0) + (Math.ceil(n / r.load) === 1 ? " container" : " containers") : "Does not fit");
-          })));
+        if (mode === "cartons") {
+          var a = val(L), b = val(W), c = val(H), kg = val(wt);
+          if (!(a > 0 && b > 0 && c > 0)) { out.appendChild(h("p", { class: "empty", text: "Enter the carton size to see how many fit in each container." })); return; }
+          var dims = [a / 100, b / 100, c / 100];
+          var rows = CONTAINERS.map(function (ct) {
+            var f = bestFit(ct, dims, up.box.checked), byVol = f.n;
+            var byWt = kg > 0 ? Math.floor(ct.payload / kg) : Infinity, load = Math.min(byVol, byWt);
+            var util = load * dims[0] * dims[1] * dims[2] / (ct.l * ct.w * ct.h) * 100;
+            return { ct: ct, load: load, cells: [h("strong", { text: ct.id }), fmt(byVol, 0), byWt === Infinity ? h("span", { class: "dash", text: "not set" }) : fmt(byWt, 0), h("strong", { text: fmt(load, 0) }), kg > 0 && byWt < byVol ? "Weight" : "Volume", fmt(util, 0) + "%"] };
+          });
+          render(rows, "cartons", ["Container", "By volume", "By weight", "Loadable", "Limited by", "Space used"]);
+          out.appendChild(h("p", { class: "meta", text: "Estimate: cartons are stacked in one orientation with no gaps for dunnage, pallets or door clearance. Internal sizes and payloads are typical values and vary by container and line, so confirm with your carrier." }));
+        } else {
+          var pl = val(pL), pw = val(pW), ph = val(pH), pk = val(pKg);
+          if (!(pl > 0 && pw > 0 && ph > 0)) { out.appendChild(h("p", { class: "empty", text: "Enter the pallet length, width and loaded height to see how many fit in each container." })); return; }
+          var maxStack = stackable.box.checked ? Math.max(1, Math.floor(val(pStack)) || 1) : 1;
+          var rowsP = CONTAINERS.map(function (ct) {
+            var spots = ph / 100 <= ct.h ? floorSpots(ct.l, ct.w, pl / 100, pw / 100) : 0;
+            var layers = Math.max(0, Math.min(maxStack, Math.floor(ct.h / (ph / 100) + 1e-9)));
+            var bySpace = spots * layers;
+            var byWt = pk > 0 ? Math.floor(ct.payload / pk) : Infinity, load = Math.min(bySpace, byWt);
+            var util = load * (pl / 100) * (pw / 100) * (ph / 100) / (ct.l * ct.w * ct.h) * 100;
+            var limitedBy = pk > 0 && byWt < bySpace ? "weight" : "space";
+            return { ct: ct, load: load, cells: [h("strong", { text: ct.id }), fmt(spots, 0) + " \u00d7 " + fmt(layers, 0) + " high", fmt(bySpace, 0), byWt === Infinity ? h("span", { class: "dash", text: "not set" }) : fmt(byWt, 0), h("div", null, h("strong", { text: fmt(load, 0) }), h("div", { class: "sub", style: "font-size:0.78rem;color:var(--muted)", text: "limited by " + limitedBy + ", " + fmt(util, 0) + "% full" }))] };
+          });
+          render(rowsP, "pallets", ["Container", "Floor", "By space", "By weight", "Loadable"]);
+          out.appendChild(h("p", { class: "meta", text: "Estimate: each pallet is a rectangle placed on the floor, with up to two strips turned differently to fill the width (that is how 11 EUR pallets fit in a 20 ft). Real loading may fit one more or fewer. Door height is a little below the internal height, so tall pallets may not pass the doors. Payloads are typical values." }));
         }
-        out.appendChild(h("p", { class: "meta", text: "Estimate: cartons are stacked in one orientation with no gaps for dunnage, pallets or door clearance. Internal sizes and payloads are typical values and vary by container and line, so confirm with your carrier." }));
       }
 
-      [L, W, H, wt, qty].forEach(function (i) { i.addEventListener("input", update); });
+      var chips = FF.chips([{ v: "cartons", t: "Loose cartons" }, { v: "pallets", t: "Pallets" }], ["cartons"], function (sel) {
+        mode = sel[0] || "cartons";
+        cartonBox.style.display = mode === "cartons" ? "flex" : "none";
+        palletBox.style.display = mode === "pallets" ? "flex" : "none";
+        update();
+      }, true);
+
+      [L, W, H, wt, qty, pL, pW, pH, pKg, pQty, pStack].forEach(function (i) { i.addEventListener("input", update); });
       up.box.addEventListener("change", update);
+      stackable.box.addEventListener("change", update);
       root.appendChild(FF.split([
-        h("div", { class: "row" }, FF.field("Carton length (cm)", L), FF.field("Width (cm)", W), FF.field("Height (cm)", H)),
-        h("div", { class: "row" }, FF.field("Weight per carton (kg)", wt, "Optional. Adds the weight limit."), FF.field("Total cartons to ship", qty, "Optional. Shows containers needed.")),
-        up.el
+        h("div", { class: "field" }, h("span", { class: "cap", text: "What are you loading?" }), chips),
+        cartonBox, palletBox
       ], out));
       update();
     }

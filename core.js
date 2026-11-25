@@ -4,7 +4,7 @@
 
   var FF = window.FF = {
     tools: [],
-    groups: ["Cargo", "Time and dates", "Converters", "Reference"],
+    groups: ["Tracking", "Cargo", "Time and dates", "Converters", "Reference"],
     ticks: []
   };
 

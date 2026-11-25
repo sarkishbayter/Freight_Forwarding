@@ -70,8 +70,11 @@ a { color: var(--blue-deep); }
 .brand-side { margin: 0 8px 22px; }
 .nav-group { margin-bottom: 20px; }
 .nav-title {
-  font: 600 1.05rem/1.2 var(--head); letter-spacing: 0.04em; color: var(--muted);
-  padding: 0 10px 6px;
+  display: inline-block;
+  margin: 0 10px 8px;
+  font: 800 1.2rem/1.2 var(--head); letter-spacing: 0.03em; color: var(--blue);
+  text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 5px;
+  text-decoration-color: var(--blue);
 }
 #nav a {
   display: block; padding: 7px 10px; margin: 1px 0; border-radius: 8px;
@@ -283,6 +286,9 @@ th { font: 600 1.02rem var(--head); background: var(--sky); color: var(--ink); w
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr:hover td { background: var(--fog); }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+/* tables inside the narrow result panel */
+.result th, .result td { padding: 8px 8px; font-size: 0.9rem; }
+.result th { white-space: normal; }
 table.wide { min-width: 1020px; }
 table.wide td:last-child { min-width: 250px; }
 table.wide td { vertical-align: middle; }

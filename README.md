@@ -4,6 +4,7 @@ A static website of freight forwarding calculators, converters and quick referen
 
 ## Tools
 
+- **Tracking:** sea freight (booking, bill of lading or container number) and air freight (air waybill), with a saved shipments list
 - **Cargo:** chargeable weight, CBM and volume, container capacity, pallet calculator, freight cost
 - **Time and dates:** world clock, time zone converter, date calculator, ETA calculator, transit time, free time (demurrage and detention)
 - **Converters:** weight, length, temperature, CBM and CFT, currency
@@ -16,7 +17,7 @@ A static website of freight forwarding calculators, converters and quick referen
 | `index.html` | Page shell and home page |
 | `style.css` | All styling |
 | `core.js` | Helpers, navigation and routing |
-| `cargo.js`, `time.js`, `convert.js`, `reference.js` | The tools |
+| `tracking.js`, `cargo.js`, `time.js`, `convert.js`, `reference.js` | The tools |
 | `app.js` | Currency converter |
 | `data/rates.json` | Exchange rates, rewritten daily by the workflow |
 | `data/manual-rates.json` | Currencies the ECB does not publish (LBP) |
