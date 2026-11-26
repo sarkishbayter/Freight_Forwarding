@@ -144,18 +144,30 @@
       var listBox = h("div");
       var touched = false;
       var d = { n: "" };
-      function ttLink(n) {
+      /* sea only: tick Container or Bill of lading, which picks the track-trace section */
+      var mode = "container", modeTouched = false, cbC = null, cbB = null;
+      if (cfg.ttBl) {
+        cbC = FF.checkbox("Container number", true, function () { pick("container"); });
+        cbB = FF.checkbox("Bill of lading / booking number", false, function () { pick("bl"); });
+      }
+      function pick(m) { mode = m; modeTouched = true; syncBoxes(); update(); }
+      function syncBoxes() {
+        if (!cbC) return;
+        cbC.box.checked = mode === "container";
+        cbB.box.checked = mode === "bl";
+      }
+      function ttLink(n, m) {
         var e = encodeURIComponent(n);
-        return cfg.tt.replace("{n}", e) + "&numbers=" + e + "&q=" + e + "&search=" + e;
+        return ((cfg.ttBl && (m || mode) === "bl") ? cfg.ttBl : cfg.tt).replace("{n}", e) + "&numbers=" + e + "&q=" + e + "&search=" + e;
       }
 
       /* results shown inside this page */
       var frameBox = h("div", { class: "panel", hidden: true });
-      function showHere(n) {
+      function showHere(n, m) {
         FF.copy(n);
         FF.clear(frameBox);
         frameBox.hidden = false;
-        var url = ttLink(n);
+        var url = ttLink(n, m);
         var frame = h("iframe", { src: url, title: "Tracking result for " + n, loading: "lazy", style: "width:100%;height:720px;border:1px solid var(--line);border-radius:10px;background:var(--white)" });
         var cp2 = h("button", { type: "button", class: "btn ghost small", text: "Copy number", onclick: function () { FF.copy(n, cp2); } });
         var close = h("button", { type: "button", class: "btn ghost small", text: "Close", onclick: function () { frameBox.hidden = true; FF.clear(frameBox); } });
@@ -168,6 +180,7 @@
 
       function update() {
         d = cfg.detect(num.value);
+        if (cfg.ttBl && !modeTouched && d.type) { mode = d.type === "container" ? "container" : "bl"; syncBoxes(); }
         if (!touched) carrier.value = d.carrierId || "any";
         FF.clear(out);
         if (!d.n) {
@@ -178,7 +191,7 @@
         out.appendChild(h("div", { class: "headline" }, h("span", { class: "cap", text: cfg.kind === "air" ? "Air waybill" : "Number" }), h("div", { class: "big", style: "font-size:2.2rem;overflow-wrap:anywhere", text: d.n })));
         out.appendChild(h("div", { class: "stats", style: "grid-template-columns:1fr" }, d.facts.map(function (f) { return FF.stat(f[0], f[1], f[0] === "Check digit" && d.valid === false ? "accent" : ""); })));
         if (d.warn) out.appendChild(h("p", { class: "note", text: d.warn }));
-        var here = h("button", { type: "button", class: "btn", text: "Track here", onclick: function () { showHere(d.n); } });
+        var here = h("button", { type: "button", class: "btn", text: "Track here", onclick: function () { showHere(d.n, mode); } });
         var go = h("a", { class: "btn ghost", href: link(c, d), target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none;display:inline-flex;align-items:center", text: "Open " + c.name + " website" });
         go.addEventListener("click", function () { FF.copy(d.n); });
         var copy = h("button", { type: "button", class: "btn ghost", text: "Copy number", onclick: function () { FF.copy(d.n, copy); } });
@@ -198,7 +211,7 @@
         if (!d.n) return;
         var c = find(cfg.list, carrier.value);
         saved = saved.filter(function (s) { return !(s.n === d.n && s.c === c.id); });
-        saved.unshift({ n: d.n, c: c.id, p: d.prefix || "", s: d.serial || "" });
+        saved.unshift({ t: mode, n: d.n, c: c.id, p: d.prefix || "", s: d.serial || "" });
         saved = saved.slice(0, 100);
         FF.store.set(key, saved);
         drawList();
@@ -212,7 +225,7 @@
         }
         var rows = saved.map(function (s, i) {
           var c = find(cfg.list, s.c);
-          var open = h("button", { type: "button", class: "btn small", text: "Track here", onclick: function () { showHere(s.n); } });
+          var open = h("button", { type: "button", class: "btn small", text: "Track here", onclick: function () { showHere(s.n, s.t || (/^[A-Z]{4}\d{7}$/.test(s.n) ? "container" : "bl")); } });
           var site = h("a", { class: "btn ghost small", href: link(c, { n: s.n, prefix: s.p, serial: s.s, type: /^[A-Z]{4}\d{7}$/.test(s.n) ? "container" : "bl" }), target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none;display:inline-flex;align-items:center", text: "Official site" });
           site.addEventListener("click", function () { FF.copy(s.n); });
           var cp = h("button", { type: "button", class: "btn ghost small", text: "Copy", onclick: function () { FF.copy(s.n, cp); } });
@@ -230,6 +243,7 @@
 
       root.appendChild(FF.split([
         FF.field(cfg.numLabel, num, cfg.hint),
+        cbC ? h("div", { style: "display:flex;flex-direction:column;gap:6px" }, h("strong", { text: "What are you tracking?" }), cbC.el, cbB.el) : null,
         FF.field(cfg.kind === "air" ? "Airline" : "Carrier", carrier),
         h("p", { class: "note info", text: cfg.explain })
       ], out));
@@ -251,6 +265,7 @@
     render: trackPage({
       kind: "sea", list: SEA, detect: detectSea,
       tt: "https://www.track-trace.com/container?number={n}&commit=Track",
+      ttBl: "https://www.track-trace.com/bol?number={n}&commit=Track",
       numLabel: "Booking, bill of lading or container number",
       placeholder: "For example MSKU1234567 or a booking number",
       hint: "Carriers only recognise numbers they issued, so choose the right one.",
