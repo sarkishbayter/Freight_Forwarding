@@ -159,6 +159,23 @@
       var d = { n: "" };
       function ttLink(n) { return cfg.tt.replace("{n}", encodeURIComponent(n)); }
 
+      /* results shown inside this page */
+      var frameBox = h("div", { class: "panel", hidden: true });
+      function showHere(n) {
+        FF.copy(n);
+        FF.clear(frameBox);
+        frameBox.hidden = false;
+        var url = ttLink(n);
+        var frame = h("iframe", { src: url, title: "Tracking result for " + n, loading: "lazy", style: "width:100%;height:720px;border:1px solid var(--line);border-radius:10px;background:var(--white)" });
+        var newTab = h("a", { class: "btn ghost small", href: url, target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none;display:inline-flex;align-items:center", text: "Open in a new tab" });
+        var close = h("button", { type: "button", class: "btn ghost small", text: "Close", onclick: function () { frameBox.hidden = true; FF.clear(frameBox); } });
+        frameBox.appendChild(h("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px" },
+          h("h3", { style: "margin:0", text: "Tracking result for " + n }), h("div", { class: "btn-row", style: "gap:8px" }, newTab, close)));
+        frameBox.appendChild(h("p", { class: "meta", style: "margin:0 0 10px", text: "Shown by track-trace.com. If this box stays empty or shows an error, the site does not allow being shown inside another page, so use Open in a new tab." }));
+        frameBox.appendChild(frame);
+        frameBox.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
       function update() {
         d = cfg.detect(num.value);
         if (!touched) carrier.value = d.carrierId || "any";
@@ -171,12 +188,14 @@
         out.appendChild(h("div", { class: "headline" }, h("span", { class: "cap", text: cfg.kind === "air" ? "Air waybill" : "Number" }), h("div", { class: "big", style: "font-size:2.2rem;overflow-wrap:anywhere", text: d.n })));
         out.appendChild(h("div", { class: "stats", style: "grid-template-columns:1fr" }, d.facts.map(function (f) { return FF.stat(f[0], f[1], f[0] === "Check digit" && d.valid === false ? "accent" : ""); })));
         if (d.warn) out.appendChild(h("p", { class: "note", text: d.warn }));
-        var tt = h("a", { class: "btn", href: ttLink(d.n), target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none;display:inline-flex;align-items:center", text: "Track now on track-trace.com" });
+        var here = h("button", { type: "button", class: "btn", text: "Show results here", onclick: function () { showHere(d.n); } });
+        var tt = h("a", { class: "btn ghost", href: ttLink(d.n), target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none;display:inline-flex;align-items:center", text: "Track on track-trace.com (new tab)" });
+        tt.addEventListener("click", function () { FF.copy(d.n); });
         var go = h("a", { class: "btn ghost", href: link(c, d), target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none;display:inline-flex;align-items:center", text: "Open " + c.name + " website" });
         go.addEventListener("click", function () { FF.copy(d.n); });
         var copy = h("button", { type: "button", class: "btn ghost", text: "Copy number", onclick: function () { FF.copy(d.n, copy); } });
-        out.appendChild(h("div", { class: "btn-row" }, tt, go, copy));
-        out.appendChild(h("p", { class: "meta", text: "Track now sends your number to track-trace.com, an independent site that finds the carrier and shows the status, so you do not type the number again. If it picks the wrong carrier, change it on its page." }));
+        out.appendChild(h("div", { class: "btn-row" }, here, tt, go, copy));
+        out.appendChild(h("p", { class: "meta", text: "Both track-trace buttons send your number to track-trace.com, an independent site that finds the carrier and shows the status. The number is also copied to your clipboard each time you click, so you can paste it if a page asks for it." }));
         var how = c.fill === "yes" ? "Opens the tracking page with your number already filled in."
           : c.fill === "try" ? "Opens the tracking page and tries to fill in your number. If the box is empty, paste it: the number is copied when you click."
           : c.deep ? "Opens the tracking page. Paste the number into the box: it is copied when you click."
@@ -206,14 +225,16 @@
         }
         var rows = saved.map(function (s, i) {
           var c = find(cfg.list, s.c);
-          var open = h("a", { class: "btn small", href: ttLink(s.n), target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none;display:inline-flex;align-items:center", text: "Track" });
+          var open = h("button", { type: "button", class: "btn small", text: "Show here", onclick: function () { showHere(s.n); } });
+          var tab = h("a", { class: "btn ghost small", href: ttLink(s.n), target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none;display:inline-flex;align-items:center", text: "New tab" });
+          tab.addEventListener("click", function () { FF.copy(s.n); });
           var site = h("a", { class: "btn ghost small", href: link(c, { n: s.n, prefix: s.p, serial: s.s, type: /^[A-Z]{4}\d{7}$/.test(s.n) ? "container" : "bl" }), target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none;display:inline-flex;align-items:center", text: "Carrier" });
           site.addEventListener("click", function () { FF.copy(s.n); });
           var cp = h("button", { type: "button", class: "btn ghost small", text: "Copy", onclick: function () { FF.copy(s.n, cp); } });
           var rm = h("button", { type: "button", class: "btn ghost small", text: "Remove", "aria-label": "Remove " + s.n, onclick: function () { saved.splice(i, 1); FF.store.set(key, saved); drawList(); } });
           return [
             h("div", null, h("strong", { text: s.n }), s.label ? h("div", { class: "sub", style: "font-size:0.85rem;color:var(--muted)", text: s.label }) : null),
-            c.name, etaText(s.eta), h("div", { class: "btn-row", style: "gap:6px" }, open, site, cp, rm)
+            c.name, etaText(s.eta), h("div", { class: "btn-row", style: "gap:6px" }, open, tab, site, cp, rm)
           ];
         });
         listBox.appendChild(FF.table(["Shipment", cfg.kind === "air" ? "Airline" : "Carrier", "Expected arrival", ""], rows));
@@ -227,6 +248,7 @@
         FF.field(cfg.kind === "air" ? "Airline" : "Carrier", carrier),
         h("p", { class: "note info", text: cfg.explain })
       ], out));
+      root.appendChild(frameBox);
       root.appendChild(h("div", { class: "panel" },
         h("h3", { text: "My shipments" }),
         h("p", { text: "Saved in this browser only. They are not shared and are lost if you clear your browser data." }),
