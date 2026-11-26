@@ -10,7 +10,7 @@
   var sb = null;
   var me = null; // { username, full_name, role }
   var started = false;
-  var SDK = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js";
+  var SDK = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.min.js";
   var DOMAIN = "@tgf-toolbox.com";
 
   function norm(name) { return String(name || "").trim().toLowerCase().replace(/\s+/g, "."); }
