@@ -161,15 +161,37 @@
   };
 
   /* ---------- exchange rates (shared with freight cost) ---------- */
+  /* Rates: the repo file (ECB, refreshed daily by the workflow) is the base.
+     On top of it the page asks a free live-market rate service each time it opens,
+     so the numbers follow the market (like Google or xe.com). If that service is
+     unreachable, the ECB file is used. LBP keeps the rate set in manual-rates.json. */
+  var LIVE_URL = "https://open.er-api.com/v6/latest/EUR";
   FF.loadRates = function () {
     if (!FF._rates) {
-      FF._rates = fetch("data/rates.json?v=" + new Date().toISOString().slice(0, 10), { cache: "no-cache" })
+      FF._rates = fetch("data/rates.json?v=" + Date.now(), { cache: "no-store" })
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
         .then(function (d) {
           var rates = {};
           Object.keys(d.rates).forEach(function (k) { rates[k] = d.rates[k]; });
           rates[d.base] = 1;
-          return { rates: rates, date: d.date, sample: !!d.sample };
+          var out = { base: d.base, rates: rates, date: d.date, sample: !!d.sample, live: false, source: "ECB reference rates for " + d.date, notes: d.notes, updated_at: d.updated_at };
+          var ctl = typeof AbortController === "function" ? new AbortController() : null;
+          var timer = ctl ? setTimeout(function () { ctl.abort(); }, 6000) : null;
+          return fetch(LIVE_URL, { cache: "no-store", signal: ctl ? ctl.signal : undefined })
+            .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+            .then(function (j) {
+              if (timer) clearTimeout(timer);
+              if (!j || j.result !== "success" || !j.rates || !j.rates.USD || j.base_code !== "EUR") return out;
+              var live = {}, lbpPerUsd = d.rates.LBP && d.rates.USD ? d.rates.LBP / d.rates.USD : null;
+              Object.keys(rates).forEach(function (k) { live[k] = j.rates[k] > 0 ? j.rates[k] : rates[k]; });
+              live.EUR = 1;
+              if (lbpPerUsd) live.LBP = lbpPerUsd * live.USD;
+              var when = j.time_last_update_unix ? new Date(j.time_last_update_unix * 1000).toISOString().slice(0, 10) : "today";
+              out.rates = live; out.live = true; out.date = when;
+              out.source = "Market rates for " + when + " (open.er-api.com), the same kind of rate as Google and xe.com. Fallback: ECB " + d.date + ".";
+              return out;
+            })
+            .catch(function () { if (timer) clearTimeout(timer); return out; });
         })
         .catch(function () { return null; });
     }

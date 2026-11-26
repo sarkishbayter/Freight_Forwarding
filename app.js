@@ -118,7 +118,7 @@
     fillSelect(toEl, codes, to);
 
     var parts = [];
-    if (data.date) parts.push("ECB reference rates for " + data.date);
+    if (data.source) parts.push(data.source);
     if (data.notes) {
       Object.keys(data.notes).forEach(function (k) { parts.push(k + ": " + data.notes[k]); });
     }
@@ -127,7 +127,7 @@
     if (data.sample) {
       bannerEl.hidden = false;
       bannerEl.textContent = "These are sample rates. Live rates appear after the daily update workflow has run once.";
-    } else if (data.date) {
+    } else if (data.date && !data.live) {
       var ageDays = (Date.now() - new Date(data.date + "T00:00:00Z").getTime()) / 86400000;
       if (ageDays > 5) {
         bannerEl.hidden = false;
@@ -147,15 +147,11 @@
     update();
   });
 
-  // cache-bust so the browser picks up each day's file
-  fetch("data/rates.json?v=" + new Date().toISOString().slice(0, 10), { cache: "no-cache" })
-    .then(function (res) {
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      return res.json();
-    })
-    .then(init)
-    .catch(function (err) {
-      resultEl.textContent = "Could not load exchange rates.";
-      rateEl.textContent = String(err && err.message ? err.message : err);
-    });
+  FF.loadRates().then(function (d) {
+    if (!d) throw new Error("rates.json could not be loaded");
+    init(d);
+  }).catch(function (err) {
+    resultEl.textContent = "Could not load exchange rates.";
+    rateEl.textContent = String(err && err.message ? err.message : err);
+  });
 })();
