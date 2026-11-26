@@ -82,12 +82,15 @@
       if (!user.value.trim() || !pass.input.value) { msg(note, "Enter your username and password.", "bad"); return; }
       go.disabled = true; go.textContent = "Signing in...";
       sb.auth.signInWithPassword({ email: emailOf(user.value), password: pass.input.value }).then(function (r) {
-        if (r.error || !r.data || !r.data.session) throw new Error("bad");
+        if (r.error || !r.data || !r.data.session) {
+          var er = new Error((r.error && r.error.message) || "bad"); er.wrong = !r.error || r.error.status === 400 || /invalid login/i.test(er.message); throw er;
+        }
         return enter(r.data.session);
-      }).catch(function () {
+      }).catch(function (err) {
         go.disabled = false; go.textContent = "Sign in";
         pass.input.value = "";
-        msg(note, "Wrong username or password.", "bad");
+        if (err && err.wrong) msg(note, "Wrong username or password.", "bad");
+        else msg(note, "Sign-in service error: " + ((err && err.message) || "unknown") + ". Send this message to the administrator.", "bad");
       });
     });
     card.appendChild(brand());
