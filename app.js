@@ -4,7 +4,7 @@
   if (window.FF) {
     FF.register({
       id: "currency", group: "Converters", title: "Currency converter",
-      desc: "Daily European Central Bank reference rates, plus the Lebanese pound at the rate you set."
+      desc: "Convert between currencies."
     });
   }
 
@@ -118,10 +118,7 @@
     fillSelect(toEl, codes, to);
 
     var parts = [];
-    if (data.source) parts.push(data.source);
-    if (data.notes) {
-      Object.keys(data.notes).forEach(function (k) { parts.push(k + ": " + data.notes[k]); });
-    }
+    if (data.date) parts.push("Rates of " + data.date);
     sourceEl.textContent = parts.join(" · ");
 
     if (data.sample) {

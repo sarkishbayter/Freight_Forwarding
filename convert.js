@@ -53,7 +53,7 @@
 
   FF.register({
     id: "weight", group: "Converters", title: "Weight converter",
-    desc: "Kilograms, metric tonnes, pounds and more. Type in any box.",
+    desc: "Type in any box.",
     render: function (root) {
       converter(root, [
         factorUnit("kg", "Kilograms", 1, "(kg)"),
@@ -69,7 +69,7 @@
 
   FF.register({
     id: "length", group: "Converters", title: "Length converter",
-    desc: "Centimetres, millimetres, metres, inches and more. Type in any box.",
+    desc: "Type in any box.",
     render: function (root) {
       converter(root, [
         factorUnit("cm", "Centimetres", 0.01, "(cm)"),
@@ -86,7 +86,7 @@
 
   FF.register({
     id: "temperature", group: "Converters", title: "Temperature converter",
-    desc: "Celsius, Fahrenheit and Kelvin, with common reefer set points.",
+    desc: "Celsius, Fahrenheit and Kelvin.",
     render: function (root) {
       converter(root, [
         { key: "c", label: "Celsius", note: "(°C)", to: function (v) { return v; }, from: function (b) { return b; } },
@@ -104,7 +104,7 @@
 
   FF.register({
     id: "cbm-cft", group: "Converters", title: "CBM and CFT converter",
-    desc: "Cubic metres, cubic feet, litres and other volume units. Type in any box.",
+    desc: "Type in any box.",
     render: function (root) {
       converter(root, [
         factorUnit("cbm", "Cubic metres", 1, "(CBM, m³)"),

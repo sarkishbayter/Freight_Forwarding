@@ -81,7 +81,7 @@
   /* ---------- chargeable weight ---------- */
   FF.register({
     id: "chargeable-weight", group: "Cargo", title: "Chargeable weight",
-    desc: "Compare actual weight with volumetric weight. The higher one is what the carrier charges for.",
+    desc: "Actual versus volumetric weight.",
     render: function (root) {
       var modes = {
         air: { t: "Air freight (6,000 cm³ per kg)", f: 1000000 / 6000, half: true, note: "IATA rule: 1 m³ = 166.7 kg. Total is rounded up to the next 0.5 kg." },
@@ -116,7 +116,6 @@
           gross > 0 ? FF.stat("Density", fmt(gross / t.cbm, 0) + " kg/m³") : null,
           mode.value === "sea" ? FF.stat("Revenue tons (W/M)", fmt(Math.max(gross / 1000, t.cbm), 3), "accent") : null);
         out.appendChild(stats);
-        out.appendChild(h("p", { class: "meta", text: m.note }));
       }
 
       lines.onChange(update);
@@ -131,7 +130,7 @@
   /* ---------- CBM / volume ---------- */
   FF.register({
     id: "cbm", group: "Cargo", title: "CBM and volume",
-    desc: "Total cubic metres and cubic feet for any mix of cartons, pallets or crates.",
+    desc: "Total cubic metres and feet.",
     render: function (root) {
       var lines = FF.cargoLines({ weight: true, first: { pcs: 1 } });
       var out = h("div");
@@ -200,7 +199,7 @@
 
   FF.register({
     id: "container-capacity", group: "Cargo", title: "Container capacity",
-    desc: "How many cartons or pallets fit in a 20 ft, 40 ft, 40 ft high cube or 45 ft container, by space and by weight.",
+    desc: "How many cartons or pallets fit in a container.",
     render: function (root) {
       var mode = "cartons";
       var L = FF.numBox(""), W = FF.numBox(""), H = FF.numBox(""), wt = FF.numBox(""), qty = FF.numBox("");
@@ -252,7 +251,6 @@
             return { ct: ct, load: load, cells: [h("strong", { text: ct.id }), fmt(byVol, 0), byWt === Infinity ? h("span", { class: "dash", text: "not set" }) : fmt(byWt, 0), h("strong", { text: fmt(load, 0) }), kg > 0 && byWt < byVol ? "Weight" : "Volume", fmt(util, 0) + "%"] };
           });
           render(rows, "cartons", ["Container", "By volume", "By weight", "Loadable", "Limited by", "Space used"]);
-          out.appendChild(h("p", { class: "meta", text: "Estimate: cartons are stacked in one orientation with no gaps for dunnage, pallets or door clearance. Internal sizes and payloads are typical values and vary by container and line, so confirm with your carrier." }));
         } else {
           var pl = val(pL), pw = val(pW), ph = val(pH), pk = val(pKg);
           if (!(pl > 0 && pw > 0 && ph > 0)) { out.appendChild(h("p", { class: "empty", text: "Enter the pallet length, width and loaded height to see how many fit in each container." })); return; }
@@ -267,7 +265,6 @@
             return { ct: ct, load: load, cells: [h("strong", { text: ct.id }), fmt(spots, 0) + " \u00d7 " + fmt(layers, 0) + " high", fmt(bySpace, 0), byWt === Infinity ? h("span", { class: "dash", text: "not set" }) : fmt(byWt, 0), h("div", null, h("strong", { text: fmt(load, 0) }), h("div", { class: "sub", style: "font-size:0.78rem;color:var(--muted)", text: "limited by " + limitedBy + ", " + fmt(util, 0) + "% full" }))] };
           });
           render(rowsP, "pallets", ["Container", "Floor", "By space", "By weight", "Loadable"]);
-          out.appendChild(h("p", { class: "meta", text: "Estimate: each pallet is a rectangle placed on the floor, with up to two strips turned differently to fill the width (that is how 11 EUR pallets fit in a 20 ft). Real loading may fit one more or fewer. Door height is a little below the internal height, so tall pallets may not pass the doors. Payloads are typical values." }));
         }
       }
 
@@ -320,7 +317,7 @@
 
   FF.register({
     id: "pallet", group: "Cargo", title: "Pallet calculator",
-    desc: "Cartons per pallet, stack height, gross weight and pallet volume for EUR, US and custom pallets.",
+    desc: "Cartons per pallet, height, weight and volume.",
     render: function (root) {
       var preset = FF.select(Object.keys(PALLETS).map(function (k) { return { v: k, t: PALLETS[k].t }; }), "eur");
       var pL = FF.numBox(120), pW = FF.numBox(80), pH = FF.numBox(14.4), pKg = FF.numBox(25);
@@ -374,7 +371,6 @@
           FF.stat("Pallet volume", fmt(cbm, 3) + " m³"),
           k > 0 ? FF.stat("Gross weight", fmt(gross, 1) + " kg") : null,
           n > 0 ? FF.stat(fmt(n, 0) + " cartons need", fmt(Math.ceil(n / best.total), 0) + (Math.ceil(n / best.total) === 1 ? " pallet" : " pallets"), "accent") : null));
-        out.appendChild(h("p", { class: "meta", text: "Top view shows one layer. Simple block stacking with no overhang. Column or pinwheel patterns can sometimes fit more." }));
       }
 
       [pL, pW, pH, pKg, L, W, H, wt, maxH, maxKg, qty].forEach(function (i) { i.addEventListener("input", update); });
@@ -399,7 +395,7 @@
   /* ---------- freight cost ---------- */
   FF.register({
     id: "freight-cost", group: "Cargo", title: "Freight cost",
-    desc: "Build a quote: freight rate, extra charges and markup, with the total converted to another currency.",
+    desc: "Freight rate, extra charges and markup.",
     render: function (root) {
       var basisDefs = {
         kg: { t: "Per kg", q: "Chargeable weight (kg)", unit: "kg" },
@@ -490,7 +486,6 @@
           FF.field("Rate per unit", rate)),
         h("div", { class: "row" }, FF.field("Minimum freight charge", minCharge, "Optional."), FF.field("Markup (%)", markup, "Optional.")),
         h("h3", { text: "Other charges" }),
-        h("p", { class: "hint", text: "Per unit charges are multiplied by the quantity above." }),
         charges,
         h("div", { class: "btn-row" }, h("button", { type: "button", class: "btn ghost", text: "Add a charge", onclick: function () { addCharge(""); } })),
         FF.field("Also show the total in", also)

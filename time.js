@@ -95,7 +95,7 @@
   var worldClockTick = null;
   FF.register({
     id: "world-clock", group: "Time and dates", title: "World clock",
-    desc: "Live local time in the cities you work with. Green means likely office hours.",
+    desc: "Live local time in your cities.",
     onShow: function () { if (worldClockTick) worldClockTick(); },
     render: function (root) {
       var selected = FF.store.get("worldclock", ["beirut", "dubai", "frankfurt", "london", "newyork", "losangeles", "shanghai", "singapore"]);
@@ -140,7 +140,6 @@
       root.appendChild(h("div", { class: "panel", style: "margin-top:0" },
         h("h3", { text: "Cities" }), chips));
       root.appendChild(grid);
-      root.appendChild(h("p", { class: "meta", style: "margin-top:14px", text: "Office hours are assumed as Monday to Friday, 09:00 to 18:00 local time. Many Gulf and Middle East offices work different days, so treat it as a guide." }));
       build();
     }
   });
@@ -148,7 +147,7 @@
   /* ---------- time zone converter ---------- */
   FF.register({
     id: "time-zones", group: "Time and dates", title: "Time zone converter",
-    desc: "Pick a city and a time, and see the same moment in Lebanon, Dubai, China, Europe, the USA and more.",
+    desc: "Compare the same moment across cities.",
     render: function (root) {
       var src = FF.select(CITIES.map(function (c) { return { v: c.id, t: c.name + " (" + c.sub + ")" }; }), "beirut");
       var inst = Date.now();
@@ -187,7 +186,7 @@
         FF.field("Date and time", when),
         h("div", { class: "btn-row" }, now),
         h("div", { class: "field" }, h("span", { class: "cap", text: "Show these cities" }), chips)
-      ], [out, h("p", { class: "meta", text: "Green dot: likely office hours (Monday to Friday, 09:00 to 18:00). Daylight saving is handled automatically." })]));
+      ], out));
       update();
     }
   });
@@ -221,7 +220,7 @@
   /* ---------- date calculator ---------- */
   FF.register({
     id: "date-calculator", group: "Time and dates", title: "Date calculator",
-    desc: "Count the days between two dates, or add and subtract days from a date.",
+    desc: "Days between dates, or add and subtract days.",
     render: function (root) {
       /* tab 1: between */
       var d1 = isoInput(todayUTC()), d2 = isoInput(addDays(todayUTC(), 30));
@@ -287,7 +286,7 @@
   /* ---------- ETA calculator ---------- */
   FF.register({
     id: "eta", group: "Time and dates", title: "ETA calculator",
-    desc: "Work out the arrival date from the departure date and transit time, or the latest departure for a target arrival.",
+    desc: "Arrival date from departure and transit time.",
     render: function (root) {
       var etd = isoInput(todayUTC()), tt = FF.numBox(30), buf = FF.numBox(0), out1 = h("div");
       function upd1() {
@@ -342,7 +341,7 @@
 
   FF.register({
     id: "transit-time", group: "Time and dates", title: "Transit time",
-    desc: "Add up each leg of a shipment to get total transit days and the expected arrival date.",
+    desc: "Total transit days across legs.",
     render: function (root) {
       var preset = FF.select(Object.keys(TRANSIT_PRESETS).map(function (k) { return { v: k, t: TRANSIT_PRESETS[k].t }; }), "sea");
       var start = isoInput(todayUTC());
@@ -375,7 +374,6 @@
         out.appendChild(h("div", { class: "legend" }, items.map(function (x, i) {
           return h("span", null, h("i", { style: "background:" + SEG_COLORS[i % SEG_COLORS.length] }), x.n + " (" + x.d + ")");
         })));
-        out.appendChild(h("p", { class: "meta", text: "About " + fmt(total / 7, 1) + " weeks. The starting values are typical planning figures only. Replace them with your carrier's schedule." }));
       }
 
       preset.addEventListener("change", function () { load(preset.value); });
@@ -392,7 +390,7 @@
   /* ---------- free time (demurrage and detention) ---------- */
   FF.register({
     id: "free-time", group: "Time and dates", title: "Free time",
-    desc: "Find the last free day for demurrage at the terminal and detention outside it, and the charge if you go over.",
+    desc: "Last free day and charges for demurrage and detention.",
     render: function (root) {
       var weekend = FF.select([{ v: "none", t: "Count every calendar day" }, { v: "sat-sun", t: "Skip Saturday and Sunday" }, { v: "fri-sat", t: "Skip Friday and Saturday" }], "none");
       var hol = h("input", { type: "text", placeholder: "2026-12-25, 2027-01-01", "aria-label": "Days to skip" });
@@ -466,7 +464,6 @@
         out.appendChild(show(dem, R));
         out.appendChild(h("hr", { style: "border:0;border-top:1px solid var(--tide);width:100%;margin:2px 0" }));
         out.appendChild(show(det, R));
-        out.appendChild(h("p", { class: "meta", text: "Carriers differ on whether the discharge day counts and on weekends and holidays. Follow the free time shown in your carrier's tariff or booking confirmation." }));
       }
 
       var all = [weekend, hol, first.box, dem.start, dem.free, dem.ret, dem.rate, dem.tierAfter, dem.rate2, det.start, det.free, det.ret, det.rate, det.tierAfter, det.rate2];

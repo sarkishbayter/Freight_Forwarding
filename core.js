@@ -224,9 +224,11 @@
     }
     if (!el.getAttribute("data-ready")) {
       if (tool.id !== "home") {
+        el.setAttribute("data-group", tool.group || "");
         el.insertBefore(h("header", { class: "tool-head" },
-          h("h2", { text: tool.title }),
-          tool.desc ? h("p", { text: tool.desc }) : null), el.firstChild);
+          h("div", null, h("h2", { text: tool.title }), tool.desc ? h("p", { text: tool.desc }) : null),
+          h("button", { type: "button", class: "print-btn", text: "Save as PDF", title: "Opens the print window: choose Save as PDF", onclick: function () { window.print(); } }),
+          h("div", { class: "print-meta", text: "Freight toolbox - " + new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) })), el.firstChild);
       }
       if (tool.render) tool.render(el);
       el.setAttribute("data-ready", "1");
@@ -257,7 +259,7 @@
     FF.groups.forEach(function (g) {
       var list = FF.tools.filter(function (t) { return t.group === g; });
       if (!list.length) return;
-      nav.appendChild(h("div", { class: "nav-group" },
+      nav.appendChild(h("div", { class: "nav-group", "data-group": g },
         h("div", { class: "nav-title", text: g }),
         list.map(function (t) {
           return h("a", { href: "#/" + t.id, "data-id": t.id, text: t.nav || t.title });
@@ -266,13 +268,21 @@
     document.querySelector(".brand-side").setAttribute("data-id", "home");
   }
 
+  var ICONS = {"Tracking": "<circle cx=\"17\" cy=\"15\" r=\"7\" fill=\"none\" stroke=\"#fff\" stroke-width=\"3\"/><path d=\"M17 22v8M17 8V4M8 15H4M30 15h-4\" stroke=\"#fff\" stroke-width=\"3\" stroke-linecap=\"round\"/><circle cx=\"17\" cy=\"15\" r=\"2.5\" fill=\"#fff\"/>", "Cargo": "<path d=\"M4 12l13-7 13 7v14l-13 7-13-7z\" fill=\"none\" stroke=\"#fff\" stroke-width=\"3\" stroke-linejoin=\"round\"/><path d=\"M4 12l13 7 13-7M17 19v14\" stroke=\"#fff\" stroke-width=\"3\" stroke-linejoin=\"round\"/>", "Time and dates": "<circle cx=\"17\" cy=\"17\" r=\"13\" fill=\"none\" stroke=\"#fff\" stroke-width=\"3\"/><path d=\"M17 9v9l6 4\" fill=\"none\" stroke=\"#fff\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>", "Converters": "<path d=\"M6 12h22l-6-6M28 22H6l6 6\" fill=\"none\" stroke=\"#fff\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>", "Reference": "<path d=\"M6 6h13a4 4 0 014 4v20a3 3 0 00-3-3H6zM28 6H23v21h5z\" fill=\"none\" stroke=\"#fff\" stroke-width=\"3\" stroke-linejoin=\"round\"/>"};
+  function icon(g) {
+    var s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    s.setAttribute("viewBox", "0 0 34 34"); s.setAttribute("aria-hidden", "true");
+    s.innerHTML = ICONS[g] || "";
+    return s;
+  }
+
   function buildDirectory() {
     var dir = document.getElementById("directory");
     FF.groups.forEach(function (g) {
       var list = FF.tools.filter(function (t) { return t.group === g; });
       if (!list.length) return;
-      dir.appendChild(h("section", { class: "dir-group" },
-        h("h2", { text: g }),
+      dir.appendChild(h("section", { class: "dir-group", "data-group": g },
+        h("h2", null, icon(g), g),
         h("ul", null, list.map(function (t) {
           return h("li", null, h("a", { href: "#/" + t.id },
             h("span", { class: "dir-title", text: t.title }),
