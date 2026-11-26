@@ -11,6 +11,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script>if (window.FF_CONFIG && FF_CONFIG.supabaseUrl) document.documentElement.classList.add("locked");</script>
 </head>
 <body>
   <a class="skip" href="#view">Skip to content</a>
@@ -112,6 +114,7 @@
   <script src="convert.js"></script>
   <script src="app.js"></script>
   <script src="reference.js"></script>
-  <script>FF.start();</script>
+  <script src="auth.js"></script>
+  <script>FF.boot();</script>
 </body>
 </html>

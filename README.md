@@ -19,6 +19,8 @@ A static website of freight forwarding calculators, converters and quick referen
 | `core.js` | Helpers, navigation and routing |
 | `tracking.js`, `cargo.js`, `time.js`, `convert.js`, `reference.js` | The tools |
 | `app.js` | Currency converter |
+| `auth.js`, `config.js` | Login, password requests, admin page (see `LOGIN-SETUP.md`) |
+| `supabase/setup.sql` | Database tables and rules for the login |
 | `data/rates.json` | Exchange rates, rewritten daily by the workflow |
 | `data/manual-rates.json` | Currencies the ECB does not publish (LBP) |
 | `scripts/update_rates.py` | Downloads the ECB rates |
