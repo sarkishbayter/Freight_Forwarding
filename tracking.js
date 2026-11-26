@@ -157,6 +157,7 @@
       var listBox = h("div");
       var touched = false;
       var d = { n: "" };
+      function ttLink(n) { return cfg.tt.replace("{n}", encodeURIComponent(n)); }
 
       function update() {
         d = cfg.detect(num.value);
@@ -170,15 +171,17 @@
         out.appendChild(h("div", { class: "headline" }, h("span", { class: "cap", text: cfg.kind === "air" ? "Air waybill" : "Number" }), h("div", { class: "big", style: "font-size:2.2rem;overflow-wrap:anywhere", text: d.n })));
         out.appendChild(h("div", { class: "stats", style: "grid-template-columns:1fr" }, d.facts.map(function (f) { return FF.stat(f[0], f[1], f[0] === "Check digit" && d.valid === false ? "accent" : ""); })));
         if (d.warn) out.appendChild(h("p", { class: "note", text: d.warn }));
-        var go = h("a", { class: "btn", href: link(c, d), target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none;display:inline-flex;align-items:center", text: "Open " + c.name + " tracking" });
+        var tt = h("a", { class: "btn", href: ttLink(d.n), target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none;display:inline-flex;align-items:center", text: "Track now on track-trace.com" });
+        var go = h("a", { class: "btn ghost", href: link(c, d), target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none;display:inline-flex;align-items:center", text: "Open " + c.name + " website" });
         go.addEventListener("click", function () { FF.copy(d.n); });
         var copy = h("button", { type: "button", class: "btn ghost", text: "Copy number", onclick: function () { FF.copy(d.n, copy); } });
-        out.appendChild(h("div", { class: "btn-row" }, go, copy));
+        out.appendChild(h("div", { class: "btn-row" }, tt, go, copy));
+        out.appendChild(h("p", { class: "meta", text: "Track now sends your number to track-trace.com, an independent site that finds the carrier and shows the status, so you do not type the number again. If it picks the wrong carrier, change it on its page." }));
         var how = c.fill === "yes" ? "Opens the tracking page with your number already filled in."
           : c.fill === "try" ? "Opens the tracking page and tries to fill in your number. If the box is empty, paste it: the number is copied when you click."
           : c.deep ? "Opens the tracking page. Paste the number into the box: it is copied when you click."
           : "Opens the carrier website. Use its Track menu and paste the number: it is copied when you click.";
-        out.appendChild(h("p", { class: "meta", text: how + " The status itself comes from the carrier." }));
+        out.appendChild(h("p", { class: "meta", text: "Open " + c.name + " website: " + how.charAt(0).toLowerCase() + how.slice(1) + " The status itself comes from the carrier." }));
         var save = h("button", { type: "button", class: "btn", text: "Save to my shipments", onclick: function () { saveCurrent(); } });
         out.appendChild(h("div", { style: "border-top:1px solid var(--tide);padding-top:14px;display:flex;flex-direction:column;gap:12px" },
           FF.field("Your note (optional)", label), FF.field("Expected arrival (optional)", eta), h("div", { class: "btn-row" }, save)));
@@ -203,13 +206,14 @@
         }
         var rows = saved.map(function (s, i) {
           var c = find(cfg.list, s.c);
-          var open = h("a", { class: "btn small", href: link(c, { n: s.n, prefix: s.p, serial: s.s }), target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none;display:inline-flex;align-items:center", text: "Track" });
-          open.addEventListener("click", function () { FF.copy(s.n); });
+          var open = h("a", { class: "btn small", href: ttLink(s.n), target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none;display:inline-flex;align-items:center", text: "Track" });
+          var site = h("a", { class: "btn ghost small", href: link(c, { n: s.n, prefix: s.p, serial: s.s, type: /^[A-Z]{4}\d{7}$/.test(s.n) ? "container" : "bl" }), target: "_blank", rel: "noopener noreferrer", style: "text-decoration:none;display:inline-flex;align-items:center", text: "Carrier" });
+          site.addEventListener("click", function () { FF.copy(s.n); });
           var cp = h("button", { type: "button", class: "btn ghost small", text: "Copy", onclick: function () { FF.copy(s.n, cp); } });
           var rm = h("button", { type: "button", class: "btn ghost small", text: "Remove", "aria-label": "Remove " + s.n, onclick: function () { saved.splice(i, 1); FF.store.set(key, saved); drawList(); } });
           return [
             h("div", null, h("strong", { text: s.n }), s.label ? h("div", { class: "sub", style: "font-size:0.85rem;color:var(--muted)", text: s.label }) : null),
-            c.name, etaText(s.eta), h("div", { class: "btn-row", style: "gap:6px;flex-wrap:nowrap" }, open, cp, rm)
+            c.name, etaText(s.eta), h("div", { class: "btn-row", style: "gap:6px" }, open, site, cp, rm)
           ];
         });
         listBox.appendChild(FF.table(["Shipment", cfg.kind === "air" ? "Airline" : "Carrier", "Expected arrival", ""], rows));
@@ -239,11 +243,12 @@
     desc: "Track a sea shipment by booking number, bill of lading or container number on the carrier's own site.",
     render: trackPage({
       kind: "sea", list: SEA, detect: detectSea,
+      tt: "https://www.track-trace.com/container?number={n}&commit=Track",
       numLabel: "Booking, bill of lading or container number",
       placeholder: "For example MSKU1234567 or a booking number",
       hint: "Carriers only recognise numbers they issued, so choose the right one.",
       empty: "Enter a number to get the tracking link.",
-      explain: "Carrier websites do not allow other sites to read their live status, so this page checks your number, picks the carrier and opens the carrier's official tracking page.",
+      explain: "Carrier websites do not allow other sites to read their live status, so this page checks your number and hands it to a tracking site or to the carrier's own page.",
       universal: { text: "Not sure which carrier? Try a tracker that covers many lines:", url: "https://parcelsapp.com/en/container-sea-cargo", label: "Parcels App sea cargo tracking" }
     })
   });
@@ -253,11 +258,12 @@
     desc: "Track an air shipment by air waybill (AWB) number. The airline is found from the first three digits.",
     render: trackPage({
       kind: "air", list: AIR, detect: detectAir,
+      tt: "https://www.track-trace.com/aircargo?number={n}&commit=Trace",
       numLabel: "Air waybill (AWB) number",
       placeholder: "For example 176-12345675",
       hint: "11 digits: 3-digit airline prefix, then 8 digits. Spaces and dashes are fine.",
       empty: "Enter an air waybill number to get the tracking link.",
-      explain: "Air freight is tracked by the air waybill number, not the booking number. If you only have a forwarder's booking number, ask for the AWB. Airline sites do not allow other sites to read their live status, so this page opens the airline's tracking page.",
+      explain: "Air freight is tracked by the air waybill number, not the booking number. If you only have a forwarder's booking number, ask for the AWB. Airline sites do not allow other sites to read their live status, so this page hands your number to a tracking site or to the airline's own page.",
       universal: { text: "Airline not in the list? Try a tracker that covers many airlines:", url: "https://parcelsapp.com/en/air-cargo-tracking", label: "Parcels App air cargo tracking" }
     })
   });
