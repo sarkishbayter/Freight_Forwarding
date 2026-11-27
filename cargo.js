@@ -504,6 +504,8 @@
       var rows = [];
       var out = h("div");
       var rateData = null;
+      /* exact values: always 4 decimals, nothing rounded before the last step */
+      function fmt(n) { return isFinite(n) ? new Intl.NumberFormat("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 }).format(n) : "n/a"; }
       var CURS = ["USD", "EUR", "GBP", "AED"];
 
       function curOptions() { return rateData ? Object.keys(rateData.rates).sort() : CURS; }
@@ -548,7 +550,7 @@
           return [d.name + " (" + d.c + ")", fmt(d.insured, 2), fmt(d.prem, 2), d.inT == null ? "n/a" : fmt(d.inT, 2)];
         });
         body.push([h("strong", { text: "Total" }), "", "", h("strong", { text: fmt(total, 2) + " " + T })]);
-        var tbl = FF.table(["Policy", "Insured (+" + fmt(up, 2) + "%)", "Premium", "In " + T], body);
+        var tbl = FF.table(["Policy", "Insured (+" + up + "%)", "Premium", "In " + T], body);
         Array.prototype.forEach.call(tbl.querySelectorAll("td:nth-child(n+2)"), function (td) { td.className = "num"; });
         out.appendChild(tbl);
         if (missing) out.appendChild(h("p", { class: "meta", text: "A currency could not be converted because the rates are not loaded. Reload the page." }));
