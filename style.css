@@ -506,3 +506,13 @@ td strong { font-weight: 600; }
 .modal-box { background: var(--white); border-radius: 16px; padding: 24px; width: min(100%, 400px); display: flex; flex-direction: column; gap: 14px; }
 .modal-box h2 { margin: 0; font: 800 1.8rem/1 var(--head); }
 @media print { .login, .modal, .account { display: none !important; } }
+
+/* insurance lines */
+.ins-line { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 0.8fr) 36px; }
+.ins-head { font-size: 0.8rem; color: var(--muted); border: 0; padding-bottom: 0; }
+@media (max-width: 560px) {
+  .ins-head { display: none; }
+  .ins-line { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+  .ins-line > :first-child { grid-column: 1 / -1; }
+  .ins-line > .x { grid-column: 1 / -1; }
+}

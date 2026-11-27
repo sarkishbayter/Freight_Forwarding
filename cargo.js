@@ -493,4 +493,97 @@
       update();
     }
   });
+  /* ---------- insurance ---------- */
+  FF.register({
+    id: "insurance", group: "Cargo", title: "Insurance",
+    desc: "Insured value, premium and the total in one currency.",
+    render: function (root) {
+      var uplift = FF.numBox("10");
+      var target = FF.select(["USD", "EUR", "GBP", "AED"], "USD");
+      var linesBox = h("div", { class: "lines" });
+      var rows = [];
+      var out = h("div");
+      var rateData = null;
+      var CURS = ["USD", "EUR", "GBP", "AED"];
+
+      function curOptions() { return rateData ? Object.keys(rateData.rates).sort() : CURS; }
+
+      function addLine(name, curr) {
+        var r = {
+          name: h("input", { type: "text", value: name || "", placeholder: "Shipment / policy", "aria-label": "Shipment or policy" }),
+          val: FF.numBox("", { "aria-label": "Cargo value", placeholder: "Cargo value" }),
+          cur: FF.select(curOptions(), curr || "USD", { "aria-label": "Currency" }),
+          rate: FF.numBox("", { "aria-label": "Insurance rate in percent", placeholder: "Rate %" })
+        };
+        r.x = h("button", { type: "button", class: "x", "aria-label": "Remove line", text: "×", onclick: function () { rows.splice(rows.indexOf(r), 1); linesBox.removeChild(r.el); update(); } });
+        r.el = h("div", { class: "line ins-line" }, r.name, r.val, r.cur, r.rate, r.x);
+        [r.name, r.val, r.rate].forEach(function (i) { i.addEventListener("input", update); });
+        r.cur.addEventListener("change", update);
+        rows.push(r); linesBox.appendChild(r.el);
+      }
+
+      function toTarget(amount, from) {
+        var t = target.value;
+        if (from === t) return amount;
+        if (!rateData || !rateData.rates[from] || !rateData.rates[t]) return null;
+        return amount / rateData.rates[from] * rateData.rates[t];
+      }
+
+      function update() {
+        FF.clear(out);
+        var up = val(uplift) >= 0 ? val(uplift) : 0, T = target.value;
+        var data = [], total = 0, missing = false;
+        rows.forEach(function (r, i) {
+          var v = val(r.val), rt = val(r.rate);
+          if (!(v > 0) || !(rt > 0)) return;
+          var insured = v * (1 + up / 100), prem = insured * rt / 100, inT = toTarget(prem, r.cur.value);
+          if (inT == null) missing = true; else total += inT;
+          data.push({ name: r.name.value || "Policy " + (i + 1), c: r.cur.value, v: v, insured: insured, prem: prem, inT: inT });
+        });
+        if (!data.length) { out.appendChild(h("p", { class: "empty", text: "Enter the cargo value and the insurance rate to see the cost." })); return; }
+        out.appendChild(h("div", { class: "headline" },
+          h("span", { class: "cap", text: "Total insurance cost" }),
+          h("div", { class: "big" }, fmt(total, 2), h("small", { text: T }))));
+        var body = data.map(function (d) {
+          return [d.name + " (" + d.c + ")", fmt(d.insured, 2), fmt(d.prem, 2), d.inT == null ? "n/a" : fmt(d.inT, 2)];
+        });
+        body.push([h("strong", { text: "Total" }), "", "", h("strong", { text: fmt(total, 2) + " " + T })]);
+        var tbl = FF.table(["Policy", "Insured (+" + fmt(up, 2) + "%)", "Premium", "In " + T], body);
+        Array.prototype.forEach.call(tbl.querySelectorAll("td:nth-child(n+2)"), function (td) { td.className = "num"; });
+        out.appendChild(tbl);
+        if (missing) out.appendChild(h("p", { class: "meta", text: "A currency could not be converted because the rates are not loaded. Reload the page." }));
+        else if (rateData && data.some(function (d) { return d.c !== T; })) out.appendChild(h("p", { class: "meta", text: "Rates of " + rateData.date }));
+        var text = data.map(function (d) { return d.name + ": " + fmt(d.prem, 2) + " " + d.c + (d.c !== T && d.inT != null ? " = " + fmt(d.inT, 2) + " " + T : ""); }).join("\n") + "\nTotal: " + fmt(total, 2) + " " + T;
+        var btn = h("button", { type: "button", class: "btn ghost small", text: "Copy summary", onclick: function () { FF.copy(text, btn); } });
+        out.appendChild(h("div", { class: "btn-row" }, btn));
+      }
+
+      uplift.addEventListener("input", update);
+      target.addEventListener("change", update);
+      addLine("Shipment 1", "USD");
+
+      FF.loadRates().then(function (d) {
+        if (!d) return;
+        rateData = d;
+        var list = Object.keys(d.rates).sort();
+        [target].concat(rows.map(function (r) { return r.cur; })).forEach(function (s) {
+          var keep = s.value; FF.clear(s);
+          list.forEach(function (c) { s.appendChild(h("option", { value: c, text: c })); });
+          s.value = list.indexOf(keep) > -1 ? keep : "USD";
+        });
+        update();
+      });
+
+      root.appendChild(FF.split([
+        h("div", { class: "row" },
+          FF.field("Add to cargo value (%)", uplift, "Insured value = value + this %."),
+          FF.field("Show the total in", target)),
+        h("h3", { text: "Cargo and insurance rates" }),
+        h("div", { class: "line ins-line ins-head" }, h("span", { text: "Description" }), h("span", { text: "Cargo value" }), h("span", { text: "Currency" }), h("span", { text: "Rate (%)" }), h("span")),
+        linesBox,
+        h("div", { class: "btn-row" }, h("button", { type: "button", class: "btn ghost", text: "Add a line", onclick: function () { addLine("Shipment " + (rows.length + 1), "USD"); update(); } }))
+      ], out));
+      update();
+    }
+  });
 })();
