@@ -315,16 +315,14 @@ input:focus, select:focus {
 /* ---------- tables ---------- */
 .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--white); }
 table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
-th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
-th { font: 600 1.02rem var(--head); background: var(--sky); color: var(--ink); white-space: nowrap; position: sticky; top: 0; }
+th, td { text-align: left; overflow-wrap: break-word; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 1.02rem var(--head); background: var(--sky); color: var(--ink); position: sticky; top: 0; }
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr:hover td { background: var(--fog); }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 /* tables inside the narrow result panel */
 .result th, .result td { padding: 8px 8px; font-size: 0.9rem; }
 .result th { white-space: normal; }
-table.wide { min-width: 1020px; }
-table.wide td:last-child { min-width: 250px; }
 table.wide td { vertical-align: middle; }
 td strong { font-weight: 600; }
 .code { font: 700 1.05rem var(--head); letter-spacing: 0.03em; color: var(--blue-deep); white-space: nowrap; }
@@ -517,3 +515,6 @@ td strong { font-weight: 600; }
 }
 .ins-detail-row td { background: var(--sky); }
 .ins-detail { padding: 6px 2px; }
+
+/* insurance: form on top, result below, both full width so the tables never need sideways scrolling */
+.stack { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }

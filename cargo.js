@@ -668,7 +668,7 @@
         update();
       });
 
-      root.appendChild(FF.split([
+      root.appendChild(h("div", { class: "stack" }, h("div", { class: "inputs" }, [
         FF.field("Shipment", ref),
         h("div", { class: "row" },
           FF.field("Add to invoice value (%)", uplift),
@@ -680,7 +680,7 @@
           h("button", { type: "button", class: "btn ghost", text: "Add an invoice", onclick: function () { addLine("", "", "USD", ""); update(); } }),
           saveBtn,
           h("button", { type: "button", class: "btn ghost", text: "New shipment", onclick: resetForm }))
-      ], out));
+      ]), h("aside", { class: "result", "aria-live": "polite" }, out)));
       root.appendChild(h("div", { class: "panel", id: "ins-saved" }, h("h3", { text: "Saved shipments" }), savedBox));
       renderSaved();
       update();
