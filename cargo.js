@@ -557,7 +557,17 @@
         var body = c.list.map(function (d) {
           return [d.inv, d.c, fmt(d.v), fmt(d.insured), d.rate + "%", fmt(d.prem), d.inT == null ? "n/a" : fmt(d.inT)];
         });
-        body.push([h("strong", { text: "Total" }), "", "", "", "", "", h("strong", { text: fmt(c.total) + " " + c.T })]);
+        /* totals: in the invoices' own currency when they all share one, otherwise converted to the chosen currency */
+        var same = c.list.every(function (d) { return d.c === c.list[0].c; });
+        var sv = 0, si = 0, sp = 0, ok = true;
+        c.list.forEach(function (d) {
+          var k = same ? 1 : (d.prem > 0 && d.inT != null ? d.inT / d.prem : null);
+          if (k == null) { ok = false; return; }
+          sv += d.v * k; si += d.insured * k; sp += d.prem * k;
+        });
+        var unit = same ? c.list[0].c : c.T;
+        function tot(n) { return h("strong", { text: ok ? fmt(n) : "n/a" }); }
+        body.push([h("strong", { text: "Total" }), h("strong", { text: unit }), tot(sv), tot(si), "", tot(sp), h("strong", { text: fmt(c.total) + " " + c.T })]);
         var t = FF.table(["Invoice", "Cur.", "Value", "Insured +" + c.up + "%", "Rate", "Premium", "In " + c.T], body);
         Array.prototype.forEach.call(t.querySelectorAll("td:nth-child(n+3), th:nth-child(n+3)"), function (td) { td.className = "num"; });
         return t;
