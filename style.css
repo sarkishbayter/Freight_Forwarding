@@ -516,3 +516,5 @@ td strong { font-weight: 600; }
   .ins-line > :first-child { grid-column: 1 / -1; }
   .ins-line > .x { grid-column: 1 / -1; }
 }
+.ins-detail-row td { background: var(--sky); }
+.ins-detail { padding: 6px 2px; }

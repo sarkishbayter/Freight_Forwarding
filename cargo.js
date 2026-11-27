@@ -496,95 +496,192 @@
   /* ---------- insurance ---------- */
   FF.register({
     id: "insurance", group: "Cargo", title: "Insurance",
-    desc: "Insured value, premium and the total in one currency.",
+    desc: "Insurance cost per shipment, with several invoices and currencies.",
     render: function (root) {
+      var STORE = "insurance." + (FF.userKey || "");
+      var CURS = ["USD", "EUR", "GBP", "AED"];
+      var ref = h("input", { type: "text", placeholder: "Shipment reference", "aria-label": "Shipment reference" });
       var uplift = FF.numBox("10");
-      var target = FF.select(["USD", "EUR", "GBP", "AED"], "USD");
+      var target = FF.select(CURS, "USD");
       var linesBox = h("div", { class: "lines" });
       var rows = [];
       var out = h("div");
-      var rateData = null;
-      /* exact values: always 4 decimals, nothing rounded before the last step */
+      var rateData = null, editingId = null, current = null;
+      var savedBox = h("div");
+      var saveBtn = h("button", { type: "button", class: "btn", text: "Save shipment" });
+
+      /* exact values: always 4 decimals, nothing is rounded before the final display */
       function fmt(n) { return isFinite(n) ? new Intl.NumberFormat("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 }).format(n) : "n/a"; }
-      var CURS = ["USD", "EUR", "GBP", "AED"];
+      function curList() { return rateData ? Object.keys(rateData.rates).sort() : CURS; }
+      function fillSelect(sel, keep) {
+        FF.clear(sel);
+        curList().forEach(function (c) { sel.appendChild(h("option", { value: c, text: c })); });
+        sel.value = curList().indexOf(keep) > -1 ? keep : "USD";
+      }
 
-      function curOptions() { return rateData ? Object.keys(rateData.rates).sort() : CURS; }
-
-      function addLine(name, curr) {
+      function addLine(name, value, curr, rate) {
         var r = {
-          name: h("input", { type: "text", value: name || "", placeholder: "Shipment / policy", "aria-label": "Shipment or policy" }),
-          val: FF.numBox("", { "aria-label": "Cargo value", placeholder: "Cargo value" }),
-          cur: FF.select(curOptions(), curr || "USD", { "aria-label": "Currency" }),
-          rate: FF.numBox("", { "aria-label": "Insurance rate in percent", placeholder: "Rate %" })
+          name: h("input", { type: "text", value: name || "", placeholder: "Invoice no.", "aria-label": "Invoice number" }),
+          val: FF.numBox(value == null ? "" : value, { "aria-label": "Invoice value", placeholder: "Invoice value" }),
+          cur: h("select", { "aria-label": "Currency" }),
+          rate: FF.numBox(rate == null ? "" : rate, { "aria-label": "Insurance rate in percent", placeholder: "Rate %" })
         };
-        r.x = h("button", { type: "button", class: "x", "aria-label": "Remove line", text: "×", onclick: function () { rows.splice(rows.indexOf(r), 1); linesBox.removeChild(r.el); update(); } });
+        fillSelect(r.cur, curr || "USD");
+        r.x = h("button", { type: "button", class: "x", "aria-label": "Remove invoice", text: "×", onclick: function () { rows.splice(rows.indexOf(r), 1); linesBox.removeChild(r.el); update(); } });
         r.el = h("div", { class: "line ins-line" }, r.name, r.val, r.cur, r.rate, r.x);
         [r.name, r.val, r.rate].forEach(function (i) { i.addEventListener("input", update); });
         r.cur.addEventListener("change", update);
         rows.push(r); linesBox.appendChild(r.el);
       }
 
-      function toTarget(amount, from) {
-        var t = target.value;
-        if (from === t) return amount;
-        if (!rateData || !rateData.rates[from] || !rateData.rates[t]) return null;
-        return amount / rateData.rates[from] * rateData.rates[t];
+      function convert(amount, from, to) {
+        if (from === to) return amount;
+        if (!rateData || !rateData.rates[from] || !rateData.rates[to]) return null;
+        return amount / rateData.rates[from] * rateData.rates[to];
+      }
+
+      /* the full calculation, used for the live result and for what gets saved */
+      function calc() {
+        var up = val(uplift) >= 0 ? val(uplift) : 0, T = target.value, list = [], total = 0, missing = false;
+        rows.forEach(function (r, i) {
+          var v = val(r.val), rt = val(r.rate);
+          if (!(v > 0) || !(rt > 0)) return;
+          var insured = v * (1 + up / 100), prem = insured * rt / 100, inT = convert(prem, r.cur.value, T);
+          if (inT == null) missing = true; else total += inT;
+          list.push({ inv: r.name.value || "Invoice " + (i + 1), c: r.cur.value, v: v, insured: insured, rate: rt, prem: prem, inT: inT });
+        });
+        return { up: up, T: T, list: list, total: total, missing: missing };
+      }
+
+      function detailTable(c) {
+        var body = c.list.map(function (d) {
+          return [d.inv, d.c, fmt(d.v), fmt(d.insured), d.rate + "%", fmt(d.prem), d.inT == null ? "n/a" : fmt(d.inT)];
+        });
+        body.push([h("strong", { text: "Total" }), "", "", "", "", "", h("strong", { text: fmt(c.total) + " " + c.T })]);
+        var t = FF.table(["Invoice", "Cur.", "Value", "Insured +" + c.up + "%", "Rate", "Premium", "In " + c.T], body);
+        Array.prototype.forEach.call(t.querySelectorAll("td:nth-child(n+3)"), function (td) { td.className = "num"; });
+        return t;
       }
 
       function update() {
         FF.clear(out);
-        var up = val(uplift) >= 0 ? val(uplift) : 0, T = target.value;
-        var data = [], total = 0, missing = false;
-        rows.forEach(function (r, i) {
-          var v = val(r.val), rt = val(r.rate);
-          if (!(v > 0) || !(rt > 0)) return;
-          var insured = v * (1 + up / 100), prem = insured * rt / 100, inT = toTarget(prem, r.cur.value);
-          if (inT == null) missing = true; else total += inT;
-          data.push({ name: r.name.value || "Policy " + (i + 1), c: r.cur.value, v: v, insured: insured, prem: prem, inT: inT });
-        });
-        if (!data.length) { out.appendChild(h("p", { class: "empty", text: "Enter the cargo value and the insurance rate to see the cost." })); return; }
+        current = calc();
+        saveBtn.disabled = !current.list.length;
+        if (!current.list.length) { out.appendChild(h("p", { class: "empty", text: "Enter an invoice value and the insurance rate to see the cost." })); return; }
         out.appendChild(h("div", { class: "headline" },
-          h("span", { class: "cap", text: "Total insurance cost" }),
-          h("div", { class: "big" }, fmt(total, 2), h("small", { text: T }))));
-        var body = data.map(function (d) {
-          return [d.name + " (" + d.c + ")", fmt(d.insured, 2), fmt(d.prem, 2), d.inT == null ? "n/a" : fmt(d.inT, 2)];
-        });
-        body.push([h("strong", { text: "Total" }), "", "", h("strong", { text: fmt(total, 2) + " " + T })]);
-        var tbl = FF.table(["Policy", "Insured (+" + up + "%)", "Premium", "In " + T], body);
-        Array.prototype.forEach.call(tbl.querySelectorAll("td:nth-child(n+2)"), function (td) { td.className = "num"; });
-        out.appendChild(tbl);
-        if (missing) out.appendChild(h("p", { class: "meta", text: "A currency could not be converted because the rates are not loaded. Reload the page." }));
-        else if (rateData && data.some(function (d) { return d.c !== T; })) out.appendChild(h("p", { class: "meta", text: "Rates of " + rateData.date }));
-        var text = data.map(function (d) { return d.name + ": " + fmt(d.prem, 2) + " " + d.c + (d.c !== T && d.inT != null ? " = " + fmt(d.inT, 2) + " " + T : ""); }).join("\n") + "\nTotal: " + fmt(total, 2) + " " + T;
-        var btn = h("button", { type: "button", class: "btn ghost small", text: "Copy summary", onclick: function () { FF.copy(text, btn); } });
-        out.appendChild(h("div", { class: "btn-row" }, btn));
+          h("span", { class: "cap", text: (ref.value.trim() ? ref.value.trim() + ": total" : "Total") + " insurance cost" }),
+          h("div", { class: "big" }, fmt(current.total), h("small", { text: current.T }))));
+        out.appendChild(detailTable(current));
+        if (current.missing) out.appendChild(h("p", { class: "meta", text: "A currency could not be converted because the rates are not loaded. Reload the page." }));
+        else if (rateData && current.list.some(function (d) { return d.c !== current.T; })) out.appendChild(h("p", { class: "meta", text: "Rates of " + rateData.date }));
       }
 
+      /* ---------- saved shipments ---------- */
+      function load() { return FF.store.get(STORE, []); }
+      function persist(list) { FF.store.set(STORE, list); renderSaved(); }
+
+      function save() {
+        update();
+        if (!current.list.length || current.missing) return;
+        var list = load();
+        var rec = {
+          id: editingId || String(Date.now()),
+          ref: ref.value.trim() || "Shipment " + (list.length + 1),
+          saved: new Date().toISOString(), ratesDate: rateData ? rateData.date : "",
+          up: val(uplift) >= 0 ? val(uplift) : 0, T: target.value,
+          inputs: rows.map(function (r) { return { n: r.name.value, v: r.val.value, c: r.cur.value, r: r.rate.value }; }),
+          calc: current
+        };
+        var at = -1;
+        list.forEach(function (x, i) { if (x.id === rec.id) at = i; });
+        if (at > -1) list[at] = rec; else list.unshift(rec);
+        persist(list);
+        resetForm();
+        document.getElementById("ins-saved").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function resetForm() {
+        editingId = null; ref.value = ""; uplift.value = "10";
+        rows.slice().forEach(function (r) { linesBox.removeChild(r.el); });
+        rows.length = 0; addLine("", "", "USD", "");
+        saveBtn.textContent = "Save shipment";
+        update();
+      }
+
+      function edit(rec) {
+        editingId = rec.id; ref.value = rec.ref; uplift.value = String(rec.up);
+        fillSelect(target, rec.T);
+        rows.slice().forEach(function (r) { linesBox.removeChild(r.el); });
+        rows.length = 0;
+        rec.inputs.forEach(function (i) { addLine(i.n, i.v, i.c, i.r); });
+        saveBtn.textContent = "Update shipment";
+        update();
+        root.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      var open = {};
+      function renderSaved() {
+        FF.clear(savedBox);
+        var list = load();
+        if (!list.length) { savedBox.appendChild(h("p", { class: "empty", text: "No saved shipments yet. Calculate one above and press Save shipment." })); return; }
+        var trs = [], sums = {};
+        list.forEach(function (rec) {
+          sums[rec.T] = (sums[rec.T] || 0) + rec.calc.total;
+          var when = new Date(rec.saved).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+          trs.push([
+            h("strong", { text: rec.ref }), String(rec.calc.list.length), h("strong", { text: fmt(rec.calc.total) + " " + rec.T }), when,
+            h("div", { class: "btn-row", style: "gap:6px" },
+              h("button", { type: "button", class: "btn small", text: open[rec.id] ? "Hide" : "Details", onclick: function () { open[rec.id] = !open[rec.id]; renderSaved(); } }),
+              h("button", { type: "button", class: "btn ghost small", text: "Edit", onclick: function () { edit(rec); } }),
+              h("button", { type: "button", class: "btn ghost small", text: "Remove", onclick: function () { if (confirm("Remove " + rec.ref + "?")) persist(load().filter(function (x) { return x.id !== rec.id; })); } }))
+          ]);
+          if (open[rec.id]) {
+            var cell = h("div", { class: "ins-detail" },
+              h("div", { class: "meta", text: "Saved " + new Date(rec.saved).toLocaleString("en-GB") + (rec.ratesDate ? ", rates of " + rec.ratesDate : "") }),
+              detailTable(rec.calc));
+            trs.push([cell, "", "", "", ""]);
+          }
+        });
+        var tbl = FF.table(["Shipment", "Invoices", "Insurance cost", "Saved", ""], trs);
+        Array.prototype.forEach.call(tbl.querySelectorAll("tbody tr"), function (tr) {
+          var first = tr.firstChild;
+          if (first.querySelector && first.querySelector(".ins-detail")) { first.colSpan = 5; while (tr.children.length > 1) tr.removeChild(tr.lastChild); tr.className = "ins-detail-row"; }
+        });
+        savedBox.appendChild(tbl);
+        savedBox.appendChild(h("div", { class: "headline", style: "margin-top:12px" },
+          h("span", { class: "cap", text: "All saved shipments" }),
+          h("div", { class: "big", style: "font-size:1.6rem" }, Object.keys(sums).map(function (k) { return fmt(sums[k]) + " " + k; }).join("  +  "))));
+      }
+
+      ref.addEventListener("input", update);
       uplift.addEventListener("input", update);
       target.addEventListener("change", update);
-      addLine("Shipment 1", "USD");
+      saveBtn.addEventListener("click", save);
+      addLine("", "", "USD", "");
 
       FF.loadRates().then(function (d) {
         if (!d) return;
         rateData = d;
-        var list = Object.keys(d.rates).sort();
-        [target].concat(rows.map(function (r) { return r.cur; })).forEach(function (s) {
-          var keep = s.value; FF.clear(s);
-          list.forEach(function (c) { s.appendChild(h("option", { value: c, text: c })); });
-          s.value = list.indexOf(keep) > -1 ? keep : "USD";
-        });
+        fillSelect(target, target.value);
+        rows.forEach(function (r) { fillSelect(r.cur, r.cur.value); });
         update();
       });
 
       root.appendChild(FF.split([
+        FF.field("Shipment", ref),
         h("div", { class: "row" },
-          FF.field("Add to cargo value (%)", uplift, "Insured value = value + this %."),
+          FF.field("Add to invoice value (%)", uplift),
           FF.field("Show the total in", target)),
-        h("h3", { text: "Cargo and insurance rates" }),
-        h("div", { class: "line ins-line ins-head" }, h("span", { text: "Description" }), h("span", { text: "Cargo value" }), h("span", { text: "Currency" }), h("span", { text: "Rate (%)" }), h("span")),
+        h("h3", { text: "Invoices" }),
+        h("div", { class: "line ins-line ins-head" }, h("span", { text: "Invoice" }), h("span", { text: "Value" }), h("span", { text: "Currency" }), h("span", { text: "Rate (%)" }), h("span")),
         linesBox,
-        h("div", { class: "btn-row" }, h("button", { type: "button", class: "btn ghost", text: "Add a line", onclick: function () { addLine("Shipment " + (rows.length + 1), "USD"); update(); } }))
+        h("div", { class: "btn-row" },
+          h("button", { type: "button", class: "btn ghost", text: "Add an invoice", onclick: function () { addLine("", "", "USD", ""); update(); } }),
+          saveBtn,
+          h("button", { type: "button", class: "btn ghost", text: "New shipment", onclick: resetForm }))
       ], out));
+      root.appendChild(h("div", { class: "panel", id: "ins-saved" }, h("h3", { text: "Saved shipments" }), savedBox));
+      renderSaved();
       update();
     }
   });

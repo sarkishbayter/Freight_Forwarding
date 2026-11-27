@@ -232,6 +232,7 @@
     if (root) { root.remove(); root = null; }
     if (started) return;
     started = true;
+    FF.userKey = me.username;
     if (me.role === "admin") {
       if (FF.groups.indexOf("Admin") < 0) FF.groups.push("Admin");
       FF.register({ id: "admin", group: "Admin", title: "Password requests", desc: "Approve or reject password requests.", render: renderAdmin, onShow: function () { if (FF._adminRefresh) FF._adminRefresh(); } });
