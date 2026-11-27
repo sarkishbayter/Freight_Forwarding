@@ -455,7 +455,7 @@
           h("div", { class: "big" }, fmt(total, 2), h("small", { text: C }))));
         if (rateData && also.value !== C && rateData.rates[C] && rateData.rates[also.value]) {
           var conv = total / rateData.rates[C] * rateData.rates[also.value];
-          out.appendChild(h("div", { class: "stat accent" }, h("span", { class: "cap", text: "In " + also.value + (rateData.date ? " (ECB rates of " + rateData.date + ")" : "") }), h("strong", { class: "val", text: fmt(conv, 2) + " " + also.value })));
+          out.appendChild(h("div", { class: "stat accent" }, h("span", { class: "cap", text: "In " + also.value + (rateData.date ? " (rates of " + rateData.date + ")" : "") }), h("strong", { class: "val", text: fmt(conv, 2) + " " + also.value })));
         }
         var rows = [["Freight (" + fmt(q, 2) + " " + b.unit + " × " + fmt(r, 2) + ")" + (minApplied ? ", minimum applied" : ""), fmt(base, 2)]];
         lines.forEach(function (l) { rows.push([l[0], fmt(l[1], 2)]); });
