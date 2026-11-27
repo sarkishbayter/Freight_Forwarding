@@ -87,7 +87,6 @@ a { color: var(--blue-deep); }
 }
 
 .view { padding: 28px clamp(18px, 3vw, 44px) 40px; width: 100%; min-width: 0; outline: none; }
-.tool:not(#tool-home) { max-width: 1180px; }
 
 .site-footer {
   margin-left: var(--side); padding: 0 clamp(18px, 4vw, 48px) 36px;

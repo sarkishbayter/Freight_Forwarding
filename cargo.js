@@ -462,7 +462,7 @@
         if (mk > 0) rows.push(["Markup " + fmt(val(markup), 2) + "%", fmt(mk, 2)]);
         rows.push([h("strong", { text: "Total" }), h("strong", { text: fmt(total, 2) + " " + C })]);
         var tbl = FF.table(["Item", C], rows);
-        Array.prototype.forEach.call(tbl.querySelectorAll("td:last-child"), function (td) { td.className = "num"; });
+        Array.prototype.forEach.call(tbl.querySelectorAll("td:last-child, th:last-child"), function (td) { td.className = "num"; });
         out.appendChild(tbl);
         var text = rows.map(function (x) { return (x[0].textContent || x[0]) + ": " + (x[1].textContent || x[1]); }).join("\n");
         var btn = h("button", { type: "button", class: "btn ghost small", text: "Copy summary", onclick: function () { FF.copy(text, btn); } });
@@ -559,7 +559,7 @@
         });
         body.push([h("strong", { text: "Total" }), "", "", "", "", "", h("strong", { text: fmt(c.total) + " " + c.T })]);
         var t = FF.table(["Invoice", "Cur.", "Value", "Insured +" + c.up + "%", "Rate", "Premium", "In " + c.T], body);
-        Array.prototype.forEach.call(t.querySelectorAll("td:nth-child(n+3)"), function (td) { td.className = "num"; });
+        Array.prototype.forEach.call(t.querySelectorAll("td:nth-child(n+3), th:nth-child(n+3)"), function (td) { td.className = "num"; });
         return t;
       }
 
@@ -647,6 +647,7 @@
           var first = tr.firstChild;
           if (first.querySelector && first.querySelector(".ins-detail")) { first.colSpan = 5; while (tr.children.length > 1) tr.removeChild(tr.lastChild); tr.className = "ins-detail-row"; }
         });
+        Array.prototype.forEach.call(tbl.querySelectorAll("tr:not(.ins-detail-row) > :nth-child(2), tr:not(.ins-detail-row) > :nth-child(3)"), function (c) { c.className = "num"; });
         savedBox.appendChild(tbl);
         savedBox.appendChild(h("div", { class: "headline", style: "margin-top:12px" },
           h("span", { class: "cap", text: "All saved shipments" }),
